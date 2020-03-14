@@ -1,17 +1,19 @@
 # Load Libraries
-library(knitr)
-library(arules)
-library(arulesViz)
+# library(knitr)
+# library(arules)
+# library(arulesViz)
 library('dplyr')
 library('data.table')
-library(shinydashboard)
-library(shiny)
+# library(shinydashboard)
+# library(shiny)
 library(ggplot2)
 library(lubridate)
 library(Hmisc)
 library(funModeling) 
 library(tidyverse)
 library(survival)
+library(DataExplorer)
+library(glue)
 
 # Load files needed for selecting products
 #aisles = read.csv("./input/aisles.csv")
@@ -228,3 +230,27 @@ d <- ggplot(data=CANCUN_2018, aes(x=TTE, y=MARGIN,
 d + geom_point() + 
   geom_smooth(fill=NA, size=1.2)
 
+raw %>% filter(LENGTH_OF_STAY >= 1 & LENGTH_OF_STAY < 14)
+# Profiling the data input
+head(raw)
+str(raw)
+
+
+basic_eda <- function(data)
+{
+  df_status(data)
+  freq(data) 
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+}
+
+basic_eda(raw)
+plot_str(raw)
+plot_intro(raw)
+plot_missing(raw)
+plot_bar(raw)
+plot_histogram(raw)
+plot_qq(raw, sampled_rows = 1000L)
+plot_correlation(na.omit(raw), maxcat = 10L)
+plot_boxplot(raw, by = "START_DATE")
