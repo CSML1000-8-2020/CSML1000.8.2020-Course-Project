@@ -1,0 +1,893 @@
+---
+title: "CSML1000 Winter 2020, Group 8, Course Project"
+author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nicola Stevanovic"
+date: "3/19/2020"
+# output: 
+#   html_document:
+#   toc: TRUE
+#   toc_depth: 2
+# runtime: shiny
+output:
+  pdf_document:
+    toc: TRUE
+    toc_depth: 3
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries
+
+```{r, message = FALSE}
+# Load packages
+library('ggplot2') # visualization
+library('ggthemes') # visualization
+library('dplyr') # data manipulation
+library('lubridate')
+library('Hmisc')
+library('funModeling') 
+library('tidyverse')
+library('survival')
+library('DataExplorer')
+library('glue')
+# library('scales') # visualization
+# library('mice') # imputation
+# library('randomForest') # classification algorithm
+# library('caret')
+# library('e1071')
+# library('readr')
+# load the package "nnet" which provide the ANN modeling functionality
+# library("nnet")
+# load the libary "purrr" for the ANN function map
+# library("purrr")
+# library('corrplot')
+# library('data.table')
+# library('caTools')
+# library(klaR)
+```
+
+## 1. Business Understanding
+
+- Business Problem: 
+
+- Project Plan: 
+  - Load and get an understanding of the dataset, its target variable and its features.
+  - Make any modifications to the dataset needed to enable learning algorithms to be run on the data.
+  - Identify the features of the dataset that are important in predicting the target variable (dianosis in this case).
+  - Build and evaluate 3 to 4 Models from the dataset by appling various machine learning algoritms as appropiate and testing them.
+  - Identify the best model to use for the project.
+  - Build a shiny app that deploys the selected model with a user interface for end users to imput measurement values from a study and obtain a pridiction result.
+  - Identify any ethical considerations that should be addressed at each stage of the process.
+
+- Business Success Criteria: 
+
+- Ethical Framework Questions: 
+  - How could your system negatively impact individuals? 
+  - Who is most vulnerable and why? 
+  - How much error in predictions can your business accept for this use case? 
+  - Will you need to explain which input factors had the greatest influence on outputs? 
+  - Do you need PII or can you provide group-level data? 
+
+## 2. Data Understanding
+
+- Ethical Framework Questions: 
+  - Have you de-identified your data and taken measures to reduce the probability of reidentification? 
+  - Will socially sensitive features like gender or ethnic background influence outputs? 
+  - Are seemingly harmless features like location hiding proxies for socially sensitive features? 
+
+#### Get Data File
+
+- The Dataset used is obtained from: 
+
+#### Load and check data
+
+```{r, message = FALSE}
+# Load full data
+#travel_data_full = read.csv("./input/acme-travel-vacation.csv")
+raw = read.table("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
+
+# check data
+str(raw)
+```
+
+```{r, message = FALSE}
+summary(raw)
+```
+
+```{r, message = FALSE}
+head(raw, 12)
+```
+
+```{r, message = FALSE, fig.width=8, fig.align='left'}
+a=table(raw$DESTINATION)
+barplot(a,main="Booking Count per Destination",
+        ylab="Count",
+        xlab="Destination",
+        col=rainbow(5),
+        #legend=rownames(a)
+        )
+```
+
+
+```{r, message = FALSE, fig.width=8, fig.align='left'}
+a=table(raw$PACKAGE_TYPE_INDICATOR)
+barplot(a,main="Booking Count per Package Type",
+        ylab="Count",
+        xlab="Package Type",
+        col=rainbow(5),
+        #legend=rownames(a)
+        )
+```
+
+```{r, message = FALSE, fig.width=8, fig.align='left'}
+a=table(raw$OUTBOUND_TRAVEL_CLASS)
+barplot(a,main="Booking Count per Travel Class",
+        ylab="Count",
+        xlab="Outbound Travel Class",
+        col=rainbow(5),
+        #legend=rownames(a)
+        )
+```
+
+```{r, message = FALSE}
+dataset <- raw
+
+# Remove the following columns
+dataset$PACKAGE_ID <- NULL
+dataset$ACCOM_SIZE_PAID <- NULL
+dataset$ACCOM_LEVEL_PAID <- NULL
+dataset$ACCOM_TYPE_RECEIVED <- NULL
+dataset$ACCOM_SIZE_RECEIVED <- NULL
+dataset$ACCOM_LEVEL_RECEIVED <- NULL
+dataset$STATUS <- NULL
+dataset$RATE_HEADER_ID <- NULL
+dataset$RATE_CODE <- NULL
+dataset$LIST_PRICE <- NULL
+dataset$MARKET <- NULL
+dataset$RATE_GRP <- NULL
+dataset$CXL_DATE <- NULL
+dataset$SEND_DATE <- NULL
+dataset$BKG_ID <- NULL
+dataset$AGENCY <- NULL
+dataset$PACKAGE_TYPE_INDICATOR <- NULL
+dataset$ACCOM_TYPE_PAID <- NULL
+dataset$TRUE_ORIGIN <- NULL
+dataset$MAIN_FLIGHT_ORIGIN <- NULL
+dataset$MAIN_FLIGHT_DESTINATION <- NULL
+dataset$MAIN_FLIGHT_DESTINATION <- NULL
+dataset$INBOUND_FLIGHT_NUMBER <- NULL
+dataset$INBOUND_FEEDER_FLIGHT_NUMBER <- NULL
+dataset$INBOUND_TRAVEL_CLASS <- NULL
+dataset$OUTBOUND_FLIGHT_NUMBER <- NULL
+dataset$OUTBOUND_FEEDER_FLIGHT_NUMBER <- NULL
+dataset$OUTBOUND_TRAVEL_CLASS <- NULL
+dataset$BKG_TYPE <- NULL
+dataset$SURCHARGES_AND_TAXES <- NULL
+dataset$ANCILLARY_REVENUE <- NULL
+dataset$TOTAL_COST <- NULL
+dataset$SOURCE <- NULL
+```
+
+```{r, message = FALSE}
+# Make certain adjustments to the data in the following columns
+dataset$START_DATE <- as.Date(as.character(dataset$START_DATE), format="%Y%m%d")
+# BKG_DATE
+dataset$BKG_DATE <- as.Date(as.character(dataset$BKG_DATE), format="%Y%m%d")
+# ACCOMMODATION_STAR_RATING
+dataset$ACCOMMODATION_STAR_RATING <- gsub("\\*", "", dataset$ACCOMMODATION_STAR_RATING)
+dataset$ACCOMMODATION_STAR_RATING <- as.factor(dataset$ACCOMMODATION_STAR_RATING)
+
+# TTE - Time between vacation start and booking date
+dataset$TTE <- dataset$START_DATE - dataset$BKG_DATE
+dataset$TTE <- as.numeric(dataset$TTE)
+# Price 
+dataset$Price_PerNight <- dataset$REVENUE / dataset$PARTY_SIZE / dataset$LENGTH_OF_STAY
+summary(dataset$Price_PerNight)
+# Day of week of booking
+dataset$Wday_BookingDate <- weekdays(as.Date(dataset$BKG_DATE))
+dataset$Wday_BookingDate <- as.factor(dataset$Wday_BookingDate)
+# Day of week of start of stay
+dataset$Wday_StartDate <- weekdays(as.Date(dataset$START_DATE))
+dataset$Wday_StartDate <- as.factor(dataset$Wday_StartDate)
+```
+
+```{r, message = FALSE}
+head(dataset,25)
+names(dataset)
+str(dataset)
+tail(dataset)
+```
+
+```{r, message = FALSE}
+#########################################################################################
+#########################################################################################
+CANCUN_2019 <- dataset[dataset$BKG_DATE <= as.Date("2020-01-01") & 
+                          dataset$BKG_DATE >= as.Date("2018-12-31") &
+                          dataset$DESTINATION=="CANCUN" &
+                          dataset$LENGTH_OF_STAY >= 1 &
+                          dataset$LENGTH_OF_STAY <= 14 &
+                          dataset$MARGIN > 0
+                          ,]
+
+CANCUN_2018 <- dataset[dataset$BKG_DATE <= as.Date("2019-01-01") & 
+                         dataset$BKG_DATE >= as.Date("2017-12-31") &
+                         dataset$DESTINATION=="CANCUN" &
+                         dataset$LENGTH_OF_STAY >= 1 &
+                         dataset$LENGTH_OF_STAY <= 14 &
+                         dataset$MARGIN > 0
+                       ,]
+
+CANCUN_2017 <- dataset[dataset$BKG_DATE <= as.Date("2018-01-01") & 
+                         dataset$BKG_DATE >= as.Date("2016-12-31") &
+                         dataset$DESTINATION=="CANCUN" &
+                         dataset$LENGTH_OF_STAY >= 1 &
+                         dataset$LENGTH_OF_STAY <= 14 &
+                         dataset$MARGIN > 0
+                       ,]
+
+CANCUN_2016 <- dataset[dataset$BKG_DATE <= as.Date("2017-01-01") & 
+                         dataset$BKG_DATE >= as.Date("2015-12-31") &
+                         dataset$DESTINATION=="CANCUN" &
+                         dataset$LENGTH_OF_STAY >= 1 &
+                         dataset$LENGTH_OF_STAY <= 14 &
+                         dataset$MARGIN > 0
+                       ,]
+
+CANCUN_2015 <- dataset[dataset$BKG_DATE <= as.Date("2016-01-01") & 
+                         dataset$BKG_DATE >= as.Date("2014-12-31") &
+                         dataset$DESTINATION=="CANCUN" &
+                         dataset$LENGTH_OF_STAY >= 1 &
+                         dataset$LENGTH_OF_STAY <= 14 &
+                         dataset$MARGIN > 0
+                       ,]
+
+# Save the New Dataset
+dataset_flt <- dataset
+write.csv(dataset_flt,'dataset_flt.csv')
+write.csv(CANCUN_2019,'CANCUN_2019.csv')
+write.csv(CANCUN_2018,'CANCUN_2018.csv')
+write.csv(CANCUN_2017,'CANCUN_2017.csv')
+write.csv(CANCUN_2016,'CANCUN_2016.csv')
+write.csv(CANCUN_2015,'CANCUN_2015.csv')
+```
+
+```{r, message = FALSE}
+# Graph Histogram of Popular Destinations per Booking
+tmp <- dataset %>%
+  group_by(DESTINATION) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+tmp <- head(tmp, n=10)
+tmp
+tmp %>%
+  ggplot(aes(x=reorder(DESTINATION,count), y=count))+
+  geom_bar(stat="identity",fill="indian red")+
+  coord_flip()
+```
+
+```{r, message = FALSE}
+# EDA - Complete Dataset
+glimpse1 <- glimpse(dataset)
+df_status1 <- df_status(dataset)
+freq1 <- freq(dataset)
+profiling_num1 <- profiling_num(dataset)
+plot1 <- plot_num(dataset)
+describe1 <- describe(dataset)
+```
+
+```{r, message = FALSE}
+# EDA - 2015
+glimpse_2015 <- glimpse(CANCUN_2015)
+df_status_2015 <- df_status(CANCUN_2015)
+freq_2015 <- freq(CANCUN_2015)
+profiling_num_2015 <- profiling_num(CANCUN_2015)
+plot_2015 <- plot_num(CANCUN_2015)
+describe_2015 <- describe(CANCUN_2015)
+```
+
+```{r, message = FALSE}
+# EDA - 2016
+glimpse_2016 <- glimpse(CANCUN_2016)
+df_status_2016 <- df_status(CANCUN_2016)
+freq_2016 <- freq(CANCUN_2016)
+profiling_num_2016 <- profiling_num(CANCUN_2016)
+plot_2016 <- plot_num(CANCUN_2016)
+describe_2016 <- describe(CANCUN_2016)
+```
+
+```{r, message = FALSE}
+# EDA - 2017
+glimpse_2017 <- glimpse(CANCUN_2017)
+df_status_2017 <- df_status(CANCUN_2017)
+freq_2017 <- freq(CANCUN_2017)
+profiling_num_2017 <- profiling_num(CANCUN_2017)
+plot_2017 <- plot_num(CANCUN_2017)
+describe_2017 <- describe(CANCUN_2017)
+```
+
+```{r, message = FALSE}
+# EDA - 2018
+glimpse_2018 <- glimpse(CANCUN_2018)
+df_status_2018 <- df_status(CANCUN_2018)
+freq_2018 <- freq(CANCUN_2018)
+profiling_num_2018 <- profiling_num(CANCUN_2018)
+plot_2018 <- plot_num(CANCUN_2018)
+describe_2018 <- describe(CANCUN_2018)
+```
+
+```{r, message = FALSE}
+# EDA - 2019
+glimpse_2019 <- glimpse(CANCUN_2019)
+df_status_2019 <- df_status(CANCUN_2019)
+freq_2019 <- freq(CANCUN_2019)
+profiling_num_2019 <- profiling_num(CANCUN_2019)
+plot_2019 <- plot_num(CANCUN_2019)
+describe_2019 <- describe(CANCUN_2019)
+```
+
+```{r, message = FALSE}
+# Plotting interesting features
+f <- ggplot(CANCUN_2019, aes(Price_PerNight, ACCOMMODATION_STAR_RATING))
+f + geom_jitter() +
+  coord_cartesian(xlim = c(-10,2500))
+```
+
+```{r, message = FALSE}
+d <- ggplot(data=CANCUN_2019, aes(x=START_DATE, y=TTE,
+                          colour=ACCOMMODATION_STAR_RATING)) 
+d + geom_point() + 
+  geom_smooth(fill=NA, size=1.2)
+```
+
+```{r, message = FALSE}
+km_2015 <- survfit(Surv(CANCUN_2015$TTE)~1)
+summary(km_2015)
+plot(km_2015,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2015", xlab="Pre Booking in Days", ylab="Estimated probability")
+```
+
+```{r, message = FALSE}
+km_2016 <- survfit(Surv(CANCUN_2016$TTE)~1)
+summary(km_2016)
+plot(km_2016,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2016", xlab="Pre Booking in Days", ylab="Estimated probability")
+```
+
+```{r, message = FALSE}
+km_2017 <- survfit(Surv(CANCUN_2017$TTE)~1)
+summary(km_2017)
+plot(km_2017,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2017", xlab="Pre Booking in Days", ylab="Estimated probability")
+```
+
+```{r, message = FALSE}
+km_2018 <- survfit(Surv(CANCUN_2018$TTE)~1)
+summary(km_2018)
+plot(km_2018,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2018", xlab="Pre Booking in Days", ylab="Estimated probability")
+```
+
+```{r, message = FALSE}
+km_2019 <- survfit(Surv(CANCUN_2019$TTE)~1)
+summary(km_2019)
+plot(km_2019,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2019", xlab="Pre Booking in Days", ylab="Estimated probability")
+```
+
+```{r, message = FALSE}
+d <- ggplot(data=CANCUN_2018, aes(x=TTE, y=MARGIN,
+                                   colour=ACCOMMODATION_STAR_RATING)) 
+d + geom_point() + 
+  geom_smooth(fill=NA, size=1.2)
+```
+
+```{r, message = FALSE}
+raw %>% filter(LENGTH_OF_STAY >= 1 & LENGTH_OF_STAY < 14)
+# Profiling the data input
+head(raw)
+str(raw)
+```
+
+```{r, message = FALSE}
+basic_eda <- function(data)
+{
+  df_status(data)
+  freq(data) 
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+}
+```
+
+```{r, message = FALSE}
+basic_eda(raw)
+```
+
+```{r, message = FALSE}
+plot_str(raw)
+```
+
+```{r, message = FALSE}
+plot_intro(raw)
+```
+
+```{r, message = FALSE}
+plot_missing(raw)
+```
+
+```{r, message = FALSE}
+plot_bar(raw)
+```
+
+```{r, message = FALSE}
+plot_histogram(raw)
+```
+
+```{r, message = FALSE}
+plot_qq(raw, sampled_rows = 1000L)
+```
+
+```{r, message = FALSE}
+plot_correlation(na.omit(raw), maxcat = 10L)
+```
+
+```{r, message = FALSE}
+plot_boxplot(raw, by = "START_DATE")
+```
+
+```{r, message = FALSE}
+
+```
+
+```{r, message = FALSE}
+
+```
+
+```{r, message = FALSE}
+
+```
+
+```{r, message = FALSE}
+
+```
+
+```{r, message = FALSE}
+
+```
+
+```{r, message = FALSE}
+# M <- cor(travel_data_full)
+# corrplot(M, method="circle", type="full")
+```
+
+## 3. Data Preparation
+
+#### a) Data Modification
+
+#### Column Removals
+
+```{r, message = FALSE}
+# Remove Lines for the ID and Null X final Columns
+# travel_data_full <- travel_data_full[2:32]
+```
+
+#### Scale Data Set 
+
+```{r, message = FALSE}
+# Encoding the target feature as factor
+# travel_data_full$diagnosis = factor(travel_data_full$diagnosis,
+#                                        levels = c('B', 'M'),
+#                                        labels = c(0,1))
+
+# Scaling the dataset for models that require it
+# travel_data_scaled <- travel_data_full
+# travel_data_scaled[,2:31] <- scale(travel_data_scaled[,2:31])
+# str(travel_data_scaled)
+# names(travel_data_full)
+```
+
+#### Split Data into Train and Test Sets
+
+- Here we are splitting the datatsets in test and train datasets which alows for running the models.
+
+```{r, message = FALSE}
+# Split the data into a train set and a test set
+# travel_data_train <- travel_data_full[1:426,]
+# travel_data_test <- travel_data_full[427:569,]
+```
+
+#### The Dependent Variable
+
+- The dependant variable in our analysis:
+
+```{r, message = FALSE}
+# prop.table(table(travel_data_train$diagnosis))*100
+# prop.table(table(travel_data_test$diagnosis))*100
+```
+
+- 
+
+#### b) Feature Engineering
+
+#### View Correlation Matrix to explore highly correlated features
+
+```{r, message = FALSE}
+# M <- cor(diagnosis_data_train[,2:31])
+# 24) perimeter_worst, 19) concave.points_worst, 22) radius_worst, 9) concave.points_mean, 8) concavity_mean
+# M <- cor(diagnosis_data_full[24, 19, 22, 9, 8])
+# corrplot(M, method="circle", type="full")
+```
+
+#### Check Feature variables distribution vs Target
+
+```{r, message = FALSE}
+
+# featurePlot(x = diagnosis_data_train[, 2:31], 
+#             y = diagnosis_data_train$diagnosis, 
+#             plot = "density", 
+#             strip=strip.custom(par.strip.text=list(cex=.7)),
+#             scales = list(x = list(relation="free"), 
+#                           y = list(relation="free")), layout = c(6, 5), adjust = 1.5, pch = "|", auto.key=list(columns=2))
+```
+
+#### Try a recursive feature elimination check - Feature Selection Method 1
+
+We tried multiple methods to decide which variables to use for feature importance. First one is recursive feature elimination technique as below.
+
+```{r, message = FALSE}
+# set.seed(100)
+# options(warn=-1)
+# 
+# subsets <- c(1:5, 15, 20, 25, 31)
+# 
+# ctrl <- rfeControl(functions = rfFuncs,
+#                    method = "repeatedcv",
+#                    repeats = 5,
+#                    verbose = FALSE)
+# 
+# lmProfile <- rfe(x=diagnosis_data_train[, 2:31], y=diagnosis_data_train$diagnosis,
+#                  sizes = subsets,
+#                  rfeControl = ctrl)
+# 
+# lmProfile
+```
+
+## 4. Data Modeling
+
+- Ethical Framework Questions: 
+  - Does your use case require a more interpretable algorithm? 
+  - Should you be optimizing for a different outcome than accuracy to make your outcomes fairer? 
+  - Is it possible that a malicious actor has compromised training data and created misleading results? 
+
+## 4. A) Data Modeling - Random Forest
+
+#### Build a Random Forest Model based on all values to start.
+#### This gives us a model that is resistant to overfitting.
+
+```{r, message = FALSE}
+# diag_rf_model <- randomForest(factor(diagnosis) ~ radius_mean + texture_mean + perimeter_mean + 
+#                             smoothness_mean + compactness_mean + concavity_mean + concave.points_mean +
+#                             symmetry_mean + fractal_dimension_mean + 
+#                             radius_se + texture_se + perimeter_se + 
+#                             smoothness_se + compactness_se + concavity_se + concave.points_se + 
+#                             symmetry_se + fractal_dimension_se + 
+#                             radius_worst + texture_worst + perimeter_worst + 
+#                             smoothness_worst + compactness_worst + concavity_worst + concave.points_worst +
+#                             symmetry_worst + fractal_dimension_worst,
+#                          data = diagnosis_data_train)
+# diag_rf_model
+```
+
+## 5. A) Data Evaluation - Random Forest
+
+#### Test the Random Forest Model
+
+```{r, message = FALSE}
+# pre_rf <- predict(diag_rf_model, diagnosis_data_test[,-c(1,1)])
+# cm_rf <- confusionMatrix(pre_rf, diagnosis_data_test$diagnosis)
+# cm_rf
+```
+
+#### Feature Engineering Continued - Feature Selection Method 2
+
+#### Examine the Random Forest Model for feature importance
+
+```{r, message = FALSE}
+# # Get importance
+# importance    <- importance(diag_rf_model)
+# varImportance <- data.frame(Variables = row.names(importance), 
+#                             Importance = round(importance[ ,'MeanDecreaseGini'],2))
+# 
+# # Create a rank variable based on importance
+# rankImportance <- varImportance %>%
+#   mutate(Rank = paste0('#',dense_rank(desc(Importance))))
+# 
+# # Use ggplot2 to visualize the relative importance of variables
+# ggplot(rankImportance, aes(x = reorder(Variables, Importance),  y = Importance, fill = Importance)) +
+#     geom_bar(stat='identity') + 
+#     geom_text(aes(x = Variables, y = 0.5, label = Rank), hjust=0, vjust=0.55, size = 4, colour = 'red') +
+#     labs(x = 'Variables') + coord_flip() +  theme_few()
+```
+
+#### Features Selected: 
+
+- Now lets try a Logistic Regression Model using those top 5 features
+
+## 4. B) Data Modeling - Logistic Regression
+
+```{r, message = FALSE}
+
+# library('ranger')
+# dim(breastcancer_data)
+# # head(breastcancer_data,6)
+# # summary(breastcancer_data)
+# names(breastcancer_data)
+# 
+# # summarize the class distribution
+# percentage <- prop.table(table(breastcancer_data$diagnosis)) * 100
+# cbind(freq=table(breastcancer_data$diagnosis), percentage=percentage)
+# #remove id and x
+# target <- ifelse(breastcancer_data$diagnosis=="B", 1, 0)
+# #head(target)
+# model_1 = select (breastcancer_data,-c(X,id,diagnosis))
+# nobs <- nrow(model_1)
+# nobs
+# # head(model_1)
+# model_2=scale(model_1)
+# model_3<-data.frame(cbind(model_2,target))
+# # summary(model_3)
+# 
+# #model start
+# library(caTools)
+# set.seed(123)
+# split = sample.split(model_3$target, SplitRatio = 0.75)
+# train_data = subset(model_3, split == TRUE)
+# test_data = subset(model_3, split == FALSE)
+# 
+# dim(train_data)
+# 
+# # Logistic_Model <- glm(target ~ perimeter_mean + 
+# #                         + smoothness_mean + compactness_mean + concavity_mean + concave.points_mean +
+# #                         symmetry_mean ,data=train_data, family = binomial)
+# Logistic_Model <- glm(target ~ perimeter_worst + concave.points_worst + radius_worst + concave.points_mean + concavity_mean, 
+#                       data=train_data, family = binomial)
+# 
+# summary(Logistic_Model)
+```
+
+## 5. B) Data Evaluation - Logistic Regression
+
+#### Test Logistic Regression Model
+
+```{r, message = FALSE}
+# predictTrain = predict(Logistic_Model, type="response")
+# summary(predictTrain)
+# tapply(predictTrain, train_data$target, mean)
+# table(train_data$target, predictTrain > 0.5)
+# # lg_cm <- confusionMatrix(table(train_data$target, predictTrain > 0.5))
+# # lg_cm
+# # install.packages("ROCR")
+# library(ROCR)
+# ROCRpred = prediction(predictTrain, train_data$target)
+# ROCRperf = performance(ROCRpred, "tpr", "fpr")
+# plot(ROCRperf)
+# plot(ROCRperf, colorize=TRUE)
+# plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+# predictTest = predict(Logistic_Model, type = "response", newdata = test_data)
+# summary(predictTest)
+# 
+# library('MLmetrics')
+# pred <- ifelse(Logistic_Model$fitted.values<0.5, 0, 1)
+# cm_lg <- ConfusionMatrix(y_pred = pred, y_true = train_data$target)
+# cm_lg2 <- confusionMatrix(cm_lg)
+# cm_lg2
+```
+
+- Next lets try a Neural Network using those top 5 features
+
+## 4. C) Data Modeling - Neural Network
+
+### Universal approximation theorem states that simple ariticial neural networks with only one hidden layer has the potentail to represent almost any contineous functions with nicely assigned parameters and a proper non-polymonial activation function such as signoid or rectified linear unit. 
+
+### R has a package nnet, which can be used for Classification and Regression. We decided to try a simple ANN model.
+
+```{r}
+# # load the package "nnet" which provide the ANN modeling functionality
+# library("nnet")
+```
+## preprocess the data for modeling
+```{r}
+# # load the data into a data frame
+# library('readr')
+# diagnosis_data_full = read.csv("./input/diagnosis_data.csv")
+# 
+# # set up the function for data normalization
+# normalize <- function(x) {return ((x - min(x)) / (max(x) - min(x)))}
+# 
+# # normalize the numeric data from column 3 to column 32
+# maxmindf <- as.data.frame(lapply(diagnosis_data_full[3:32], normalize))
+# 
+# # normalize the factor column, transform M -> -1 and B -> 1
+# 
+# # set up the mapping function to use
+# myMapper <- function(x) { if(x=="M") {temp <- -1} else {temp <- 1}; return (temp) }
+# 
+# # load the libary "purrr" for the function map
+# library("purrr")
+# 
+# # pull out column #2 which is the factor column for prediction and transform/normalize it.
+# factors <- diagnosis_data_full[2:2]
+# factors$c2 <- unlist(map(diagnosis_data_full$diagnosis, myMapper))
+# nfactors <- as.data.frame(lapply(factors[2:2], normalize))
+# 
+# # combine the normalized input and output columns into one data frame 
+# cleanData <- cbind(nfactors, maxmindf)
+# 
+# # split the data into trainset and testset
+# trainset <- cleanData[1:426,]
+# testset <- cleanData[427:569,]
+```
+
+## Data modeling with the cleaned and normalized data set
+
+```{r}
+# # based on the importance analysis result, we rebuild the ANN with less input variables from 30 to 10
+# # we found that this will preserve the accuracy as told by the confusionMatrix
+# # while we reduced the ANN parameters from 161 to 61. 
+# # model becomes more resilent and able to catch the most essential information 
+# 
+# # set the seed with nice prime number, so make the training re-producible
+# set.seed(887)
+# # we use 5 neurons in the hidden layer
+# # 
+# fit_net_10<-nnet(c2~perimeter_worst + concave.points_worst + radius_worst + concave.points_mean + concavity_mean,
+#                  data=trainset,size=5, decay=5e-4, maxit=2000)
+# fit_net_10
+```
+
+## 5. C) Model evaluation - Neural Network
+
+```{r}
+# # put the predicted values and original values into one single data frame
+# library('NeuralNetTools')
+# predictions_10 <- data.frame(cbind(round(predict(fit_net_10, testset),digits=0), testset$c2))
+# cm_nn <- table(predictions_10$X1,predictions_10$X2)
+# confusionMatrix(cm_nn)
+# NID_10 <- NeuralNetTools::plotnet(fit_net_10)
+# ```
+# 
+# ```{r}
+# sensitivity_lekprofile_10 <- lekprofile(fit_net_10) + theme(axis.text.x = element_text(angle = 90))
+# sensitivity_lekprofile_10
+# sensitivity_lekprofile_Group_10 <- lekprofile(fit_net_10, group_show = TRUE)
+# sensitivity_lekprofile_Group_10
+# sensitivity_lekprofile_vals_10 <- lekprofile(fit_net_10, group_vals=6, group_show = TRUE)
+# sensitivity_lekprofile_vals_10
+```
+
+- Finally lets try a kernelSVM Model using those top 5 features and using the scaled dataset
+
+## 4. D) Data Modeling - kernelSVM
+
+```{r, message = FALSE}
+# dt <- diag_data_scaled_train[,-c(1)]
+# diag_kSVM_model <- svm(formula = diag_data_scaled_train$diagnosis ~.,
+#                  data = diag_data_scaled_train[,-c(1)],
+#                  type = 'C-classification',
+#                  kernel = 'radial')
+```
+
+## 5. D) Data Evaluation - kernelSVM
+
+#### Test the kernel SVM model.
+
+```{r, message = FALSE}
+# diag_kSVM_pre <- predict(diag_kSVM_model, diag_data_scaled_test[,-c(1)])
+# cm_kSVM <- confusionMatrix(diag_kSVM_pre, diag_data_scaled_test$diagnosis)
+# cm_kSVM
+```
+
+## 6. Final Model Analysis and Selection
+
+#### Cost Analysis
+
+
+```{r, message = FALSE}
+
+```
+
+#### Model Comparison
+
+<!-- - The following Machine Learning Algorithms were used in this analysis: -->
+<!--                         Accuracy Sesitivity Specificity  -->
+<!--   - Random Forest        0,9790    0.9722     1.0000 -->
+<!--   - Logistic Regression  0.9578    0.9434     0.9664 -->
+<!--   - Neural Net           0.9790    1.0000     0.9722 -->
+<!--   - kernel SVM           0.9790    0.9722     1.0000 -->
+
+
+<!-- Features of Random Forest:  -->
+<!-- Random Forest is a classification and regression algorithm. Here, we train several decision trees. The original learning dataset is randomly divided into several subsets of equal size. A decision tree is trained for each subset. -->
+
+<!-- Advantages: -->
+<!--   - Robust to overfitting (thus solving one of the biggest disadvantages of decision trees) -->
+<!--   - Parameterization remains quite simple and intuitive -->
+<!--   - Performs very well when the number of features is big and for large quantity of learning data -->
+
+<!-- Disadvantages: -->
+<!--   - Models generated with Random Forest may take a lot of memory -->
+<!--   - Learning may be slow (depending on the parameterization) -->
+<!--   - Not possible to iteratively improve the generated models -->
+
+<!-- Logistic Regression: -->
+<!-- Logistic Regression Model is a generalized form of Linear Regression Model. It is a very good Discrimination Tool. Following are the advantages and disadvantage of Logistic Regression: -->
+
+<!-- Advantages: -->
+<!--   - Logistic Regression performs well when the dataset is linearly separable. -->
+<!--   - Logistic regression is less prone to over-fitting but it can overfit in high dimensional datasets. You should consider Regularization (L1 and L2) techniques to avoid over-fitting in these scenarios. -->
+<!--   - Logistic Regression not only gives a measure of how relevant a predictor (coefficient size) is, but also its direction of association (positive or negative). -->
+<!--   - Logistic regression is easier to implement, interpret and very efficient to train. -->
+
+<!-- Disadvantages: -->
+<!--   - Main limitation of Logistic Regression is the assumption of linearity between the dependent variable and the independent variables. In the real world, the data is rarely linearly separable. Most of the time data would be a jumbled mess. -->
+<!--   - If the number of observations are lesser than the number of features, Logistic Regression should not be used, otherwise it may lead to overfit. -->
+<!--   - Logistic Regression can only be used to predict discrete functions. Therefore, the dependent variable of Logistic Regression is restricted to the discrete number set. This restriction itself is problematic, as it is prohibitive to the prediction of continuous data. -->
+
+<!-- Neural Network -->
+<!-- Advantages: -->
+<!--   - Complicated functions and non-linear problems can be solved easily by Neural network. -->
+<!--   - Can use ensembling with other techniques to get good solution. -->
+<!-- Disadvantage -->
+<!--   - Much Slower for training and classification -->
+<!--   - Hard to interpret, -->
+<!--   - Data comes in streams -->
+<!--   - Not usable with small datasets. -->
+
+<!-- Kernel SVM -->
+<!-- Features of SVMs: Support Vector machine is a classification algorithm used primarily with text classification problems. It uses  hyperplane to separate out different cluster of data. You can cut the universe in different classes using the hyperplane which can be molded in any direction. This can be done both linearly and non-linearly. The identified hyperplane can be thought as a decision boundary between the two clusters. This allows classification of vectors multi dimensionally. This can be used with text classification by encoding on text data. This results in every item in the dataset being represented as a vector with large value dimensions, everyone representing the frequency one of the words of the text. -->
+
+<!-- Advantages: -->
+<!--   - High accuracy with small data, -->
+<!--   - Not susceptible to overfitting -->
+<!--   - Works with linear and non-linear data. -->
+
+<!-- Disadvantage: -->
+<!--   - Memory-intensive operationally -->
+<!--   - Hard to understand and implement certain. -->
+
+```{r, message = FALSE}
+
+```
+
+#### Selected Model: 
+
+## 7. Deployment
+
+#### Shiny App Url: 
+
+#### Summary Explanation
+
+- Limitations of our analysis: 
+  - 
+  
+- Further steps we could take: 
+  - 
+  
+- Explanation of Model:
+  - 
+
+- Ethical Framework Questions: 
+  - Can a malicious actor infer information about individuals from your system? 
+  - Are you able to identify anomalous activity on your system that might indicate a security breach? 
+  - Do you have a plan to monitor for poor performance on individuals or subgroups? 
+  - Do you have a plan to log and store historical predictions if a consumer requests access in the future? 
+  - Have you documented model retraining cycles and can you confirm that a subject’s data has been removed from models? 
+
+## References
+
+Yihui Xie, J. J. Allaire, Garrett Grolemund, 2019, R Markdown: The Definitive Guide
+https://bookdown.org/yihui/rmarkdown/markdown-syntax.html
+
+Jonathan McPherson, 2016, R Notebooks
+https://blog.rstudio.com/2016/10/05/r-notebooks
+
+Adam Kardash, Patricia Kosseim, 2018, Responsible AI in Consumer Enterprise, integrate.ai
+
+J Marcus W. Beck, 2018, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6262849/
