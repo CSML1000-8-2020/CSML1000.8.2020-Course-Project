@@ -84,8 +84,8 @@ library('glue')
 #### Load and check data
 
 ```{r, message = FALSE}
-# Load full data
-#travel_data_full = read.csv("./input/acme-travel-vacation.csv")
+# Load data
+unzip("./input/acme-travel-vacation.zip", exdir = "input") # unzip file
 raw = read.table("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
 
 # check data

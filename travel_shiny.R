@@ -19,6 +19,8 @@ library("rnaturalearthdata")
 
 # Load files
 cities.iata <- read.csv("./input/cities_IATA_long_lat.csv", header=TRUE)
+
+unzip("./input/acme-travel-vacation.zip", exdir = "input") # unzip file
 raw = read.table("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
 
 raw$PACKAGE_ID <- NULL
@@ -127,17 +129,42 @@ server <- function(input, output, session) {
       
       observeEvent(input$getList, {
         updateDataset()
+        renderPlot()
       })
       
-      output$g <- renderPlot({ #ggplot() + 
+      output$g <- renderPlot({
+        getPlot()
+        # updateDataset()
+        # df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
+        # sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
+        
+        # ggplot() +
+        # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
+        #                          aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group ))
+        
+        # ggplot(data = world) +
+        
+
+          # geom_sf(fill = "antiquewhite1") +
+          # geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
+          # # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
+          # # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
+          # # fontface = "italic", color = "red", size = 2) +
+          # coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
+          # xlab("Longitude") + ylab("Latitude") +
+          # ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+      })
+      
+      getPlot <- reactive({
+        val <- input$dateRange;
         updateDataset()
         df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
         sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
         
-        ggplot(data = world) +
-        # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
-        #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
-
+        g <- ggplot(data = world) +
+          # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
+          #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
+          
           geom_sf(fill = "antiquewhite1") +
           geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
           # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
@@ -146,6 +173,8 @@ server <- function(input, output, session) {
           coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
           xlab("Longitude") + ylab("Latitude") +
           ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+        
+        return (g)
       })
       
       updateDataset <- function()
