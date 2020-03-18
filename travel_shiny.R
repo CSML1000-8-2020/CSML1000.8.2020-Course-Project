@@ -74,7 +74,7 @@ ui <- dashboardPage(
     
     actionButton("getList", "Get List")
   ),
-  dashboardBody(title = "Group 8 Market", 
+  dashboardBody(title = "Group 8 Agency", 
     # Boxes need to be put in a row (or column)
     fluidRow(
       box(width=12,
@@ -116,47 +116,26 @@ server <- function(input, output, session) {
   session$userData$ds_dataset <- session$userData$dataset %>% mutate_if(is.factor, as.character)
   
       output$dateRangeText  <- renderText({
-        updateDataset()
-        paste("Selected Date Range is", 
-              paste(as.character(input$dateRange), collapse = " to ")
-        )
+        paste("Selected Date Range is",  paste(as.character(input$dateRange), collapse = " to "))
       })
       
-      output$tlb <- renderTable({
-        updateDataset()
-        session$userData$ds_dataset
-      })
+      # observeEvent(input$getList, {
+      #   #updateDataset()
+      #   
+      #   # output$g <- renderPlot({
+      #   #   getPlot()
+      #   # })
+      # })
       
-      observeEvent(input$getList, {
-        updateDataset()
-        renderPlot()
-      })
-      
-      output$g <- renderPlot({
-        getPlot()
-        # updateDataset()
-        # df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
-        # sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
-        
-        # ggplot() +
-        # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
-        #                          aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group ))
-        
-        # ggplot(data = world) +
-        
-
-          # geom_sf(fill = "antiquewhite1") +
-          # geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
-          # # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
-          # # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
-          # # fontface = "italic", color = "red", size = 2) +
-          # coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
-          # xlab("Longitude") + ylab("Latitude") +
-          # ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+      observe({
+        output$g <- renderPlot({
+          getPlot()
+        })
       })
       
       getPlot <- reactive({
-        val <- input$dateRange;
+        val <- input$dateRange
+        val2 <- input$getList
         updateDataset()
         df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
         sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
@@ -179,8 +158,12 @@ server <- function(input, output, session) {
       
       updateDataset <- function()
       {
-        session$userData$dataset = raw[sample(nrow(raw), 20), ]
+        session$userData$dataset = raw[sample(nrow(raw), 10), ]
         session$userData$ds_dataset <- session$userData$dataset %>% mutate_if(is.factor, as.character)
+        
+        output$tlb <- renderTable({
+          session$userData$ds_dataset
+        })
       }
       # Create the interactive world map
       # output$distPlot <- renderGirafe({
