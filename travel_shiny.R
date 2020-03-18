@@ -17,7 +17,7 @@ library(leaflet.extras) # extending the leaflet.js
 
 # Load files
 
-raw = fread("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
+raw = fread('unzip -p ./input/acme-travel-vacation.zip')
 raw <- raw %>% select(DESTINATION,PROPERTY_ID,PARTY_SIZE,MAIN_FLIGHT_DESTINATION,START_DATE,LENGTH_OF_STAY,BKG_DATE,REVENUE,MARGIN,ACCOMMODATION_STAR_RATING,HOTEL_CJAIN_AFFILIATION)
 
 cities.iata <- fread("./input/cities_IATA_long_lat.csv", header=TRUE)
