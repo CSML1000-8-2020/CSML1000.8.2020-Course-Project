@@ -120,20 +120,6 @@ server <- function(input, output, session) {
         paste("Selected Date Range is",  paste(as.character(input$dateRange), collapse = " to "))
       })
       
-      # observeEvent(input$getList, {
-      #   #updateDataset()
-      #   
-      #   # output$g <- renderPlot({
-      #   #   getPlot()
-      #   # })
-      # })
-      
-      # observe({
-      #   output$g <- renderPlot({
-      #     getPlot()
-      #   })
-      # })
-      
       observe({
         output$g <- renderLeaflet({
           getPlot()
@@ -146,11 +132,11 @@ server <- function(input, output, session) {
         updateDataset()
         df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
         sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
-        sites["name"] <- sites$DESTINATION
+        #sites["name"] <- sites$DESTINATION
         
         g <- leaflet::leaflet(data = sites) %>% # create leaflet object
           leaflet::addTiles() %>% # add basemap
-          leaflet::addMarkers() # add data layer - markers
+          leaflet::addMarkers(popup = ~htmltools::htmlEscape(paste(DESTINATION,', Margin: ',MARGIN))) # add data layer - markers
         
         # g <- ggplot(data = world) +
         #   # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
