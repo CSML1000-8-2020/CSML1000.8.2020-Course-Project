@@ -136,6 +136,7 @@ server <- function(input, output, session) {
         
         g <- leaflet::leaflet(data = sites) %>% # create leaflet object
           leaflet::addTiles() %>% # add basemap
+          leaflet.extras::addResetMapButton() %>% 
           leaflet::addMarkers(popup = ~htmltools::htmlEscape(paste(DESTINATION,', Margin: ',MARGIN))) # add data layer - markers
         
         # g <- ggplot(data = world) +
@@ -163,12 +164,6 @@ server <- function(input, output, session) {
           session$userData$ds_dataset
         })
       }
-      # Create the interactive world map
-      # output$distPlot <- renderGirafe({
-      #   ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
-        # ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
-      # })
-  
 }
 
 # Run Shiny App
