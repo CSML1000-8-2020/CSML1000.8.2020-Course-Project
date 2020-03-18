@@ -12,60 +12,53 @@ library(ggplot2)
 #if(!require(RColorBrewer)) install.packages
 library(ggiraph)
 library(RColorBrewer)
+library(rgeos)
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
 
-# Load files needed for selecting products
+# Load files
+cities.iata <- read.csv("./input/cities_IATA_long_lat.csv", header=TRUE)
 raw = read.table("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
-set.seed(1234)
-raw_sample = raw[sample(nrow(raw), 20), ]
 
-world_data <- ggplot2::map_data('world')
-world_data <- fortify(world_data)
-wd_head <- head(world_data, 12)
-str(wd_head)
-summary(wd_head)
+raw$PACKAGE_ID <- NULL
+raw$ACCOM_SIZE_PAID <- NULL
+raw$ACCOM_LEVEL_PAID <- NULL
+raw$ACCOM_LEVEL_RECEIVED <- NULL
+raw$ACCOM_TYPE_RECEIVED <- NULL
+raw$ACCOM_SIZE_RECEIVED <- NULL
+raw$STATUS <- NULL
+raw$RATE_HEADER_ID <- NULL
+raw$RATE_CODE <- NULL
+raw$LIST_PRICE <- NULL
+raw$MARKET <- NULL
+raw$RATE_GRP <- NULL
+raw$CXL_DATE <- NULL
+raw$SEND_DATE <- NULL
+raw$BKG_ID <- NULL
+raw$AGENCY <- NULL
+raw$PACKAGE_TYPE_INDICATOR <- NULL
+raw$ACCOM_TYPE_PAID <- NULL
+raw$TRUE_ORIGIN <- NULL
+raw$MAIN_FLIGHT_ORIGIN <- NULL
+#raw$MAIN_FLIGHT_DESTINATION <- NULL
+raw$INBOUND_FLIGHT_NUMBER <- NULL
+raw$INBOUND_FEEDER_FLIGHT_NUMBER <- NULL
+raw$INBOUND_TRAVEL_CLASS <- NULL
+raw$OUTBOUND_FLIGHT_NUMBER <- NULL
+raw$OUTBOUND_FEEDER_FLIGHT_NUMBER <- NULL
+raw$OUTBOUND_TRAVEL_CLASS <- NULL
+raw$BKG_TYPE <- NULL
+raw$SURCHARGES_AND_TAXES <- NULL
+raw$ANCILLARY_REVENUE <- NULL
+raw$TOTAL_COST <- NULL
+raw$SOURCE <- NULL
 
-worldMaps <- function(df, world_data, data_type, period, indicator){
-  
-  # Function for setting the aesthetics of the plot
-  my_theme <- function () { 
-    theme_bw() + theme(axis.title = element_blank(),
-                       axis.text = element_blank(),
-                       axis.ticks = element_blank(),
-                       panel.grid.major = element_blank(), 
-                       panel.grid.minor = element_blank(),
-                       panel.background = element_blank(), 
-                       legend.position = "bottom",
-                       panel.border = element_blank(), 
-                       strip.background = element_rect(fill = 'white', colour = 'white'))
-  }
-  
-  # Select only the data that the user has selected to view
-  plotdf <- df[df$Indicator == indicator & df$DataType == data_type & df$Period == period,]
-  plotdf <- plotdf[!is.na(plotdf$ISO3), ]
-  
-  # Add the data the user wants to see to the geographical world data
-  world_data['DataType'] <- rep(data_type, nrow(world_data))
-  world_data['Period'] <- rep(period, nrow(world_data))
-  world_data['Indicator'] <- rep(indicator, nrow(world_data))
-  world_data['Value'] <- plotdf$Value[match(world_data$ISO3, plotdf$ISO3)]
-  
-  # Create caption with the data source to show underneath the map
-  capt <- paste0("Source: ", ifelse(data_type == "Childlessness", "United Nations" , "World Bank"))
-  
-  # Specify the plot for the world map
-  library(RColorBrewer)
-  library(ggiraph)
-  g <- ggplot() + 
-    geom_polygon_interactive(data = subset(world_data, lat >= -60 & lat <= 90), color = 'gray70', size = 0.1,
-                             aes(x = long, y = lat, fill = Value, group = group, 
-                                 tooltip = sprintf("%s<br/>%s", ISO3, Value))) + 
-    scale_fill_gradientn(colours = brewer.pal(5, "RdBu"), na.value = 'white') + 
-    annotate("point", x = -40, y = 35, colour = "green", size = 4) +
-    labs(fill = data_type, color = data_type, title = NULL, x = NULL, y = NULL, caption = capt) + 
-    my_theme()
-  
-  return(g)
-}
+cities.iata %>% mutate_if(is.factor, as.character) -> ds_cities.iata
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
 
 # Define UI
 ui <- dashboardPage(
@@ -100,14 +93,14 @@ ui <- dashboardPage(
       )
     ),
     fluidRow(
-      box(title = "Top Performing Destinations:", width=12,
+      box(title = "Top Destinations for Bulk Purchase:", width=12,
           # Output: interactive world map
-          girafeOutput("distPlot")
-      #tableOutput(outputId = "product_added_to_cart"),
-      #   tags$style(type="text/css",
-      #             ".shiny-output-error { visibility: hidden; }",
-      #             ".shiny-output-error:before { visibility: hidden; }"
-      #             )
+          # girafeOutput("distPlot")
+      tableOutput(outputId = "tlb"),
+        tags$style(type="text/css",
+                  ".shiny-output-error { visibility: hidden; }",
+                  ".shiny-output-error:before { visibility: hidden; }"
+                  )
       )
     )
 
@@ -117,27 +110,56 @@ ui <- dashboardPage(
 # Define server function
 server <- function(input, output, session) {
   
+  session$userData$dataset <- raw[sample(nrow(raw), 50), ]
+  session$userData$ds_dataset <- session$userData$dataset %>% mutate_if(is.factor, as.character)
+  
       output$dateRangeText  <- renderText({
-        paste("input$dateRange is", 
+        updateDataset()
+        paste("Selected Date Range is", 
               paste(as.character(input$dateRange), collapse = " to ")
         )
       })
       
-      output$g <- renderPlot({ ggplot() + 
-        geom_polygon_interactive(data = world_data, color = 'gray70', size = 0.1,
-                                 aes(x = long, y = lat, fill = lat, group = group )
-        )
+      output$tlb <- renderTable({
+        updateDataset()
+        session$userData$ds_dataset
       })
       
-      # Create the interactive world map
-      output$distPlot <- renderGirafe({
-        ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
-        # ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
+      observeEvent(input$getList, {
+        updateDataset()
       })
+      
+      output$g <- renderPlot({ #ggplot() + 
+        updateDataset()
+        df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
+        sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
+        
+        ggplot(data = world) +
+        # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
+        #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
+
+          geom_sf(fill = "antiquewhite1") +
+          geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
+          # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
+          # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
+          # fontface = "italic", color = "red", size = 2) +
+          coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
+          xlab("Longitude") + ylab("Latitude") +
+          ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+      })
+      
+      updateDataset <- function()
+      {
+        session$userData$dataset = raw[sample(nrow(raw), 20), ]
+        session$userData$ds_dataset <- session$userData$dataset %>% mutate_if(is.factor, as.character)
+      }
+      # Create the interactive world map
+      # output$distPlot <- renderGirafe({
+      #   ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
+        # ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
+      # })
   
 }
 
 # Run Shiny App
 shinyApp(ui = ui, server = server)
-
-
