@@ -1,7 +1,4 @@
 # Load Libraries
-# library(knitr)
-# library(arules)
-# library(arulesViz)
 library('dplyr')
 library('data.table')
 library(shinydashboard)
@@ -16,6 +13,9 @@ library(rgeos)
 library("sf")
 library("rnaturalearth")
 library("rnaturalearthdata")
+library(leaflet)        # javascript mapping lib :)
+library(htmltools)      # tools to support html workflow
+library(leaflet.extras) # extending the leaflet.js
 
 # Load files
 cities.iata <- read.csv("./input/cities_IATA_long_lat.csv", header=TRUE)
@@ -85,7 +85,8 @@ ui <- dashboardPage(
     ),
     fluidRow(
       box(width=12,
-          plotOutput('g')
+          leafletOutput('g')
+      #   plotOutput('g')
       #   title = "Products:",
       #   selectInput('prod_col', NULL, products_for_dept$product_name, size = 10, selectize = FALSE),
       # ),
@@ -127,8 +128,14 @@ server <- function(input, output, session) {
       #   # })
       # })
       
+      # observe({
+      #   output$g <- renderPlot({
+      #     getPlot()
+      #   })
+      # })
+      
       observe({
-        output$g <- renderPlot({
+        output$g <- renderLeaflet({
           getPlot()
         })
       })
@@ -139,19 +146,24 @@ server <- function(input, output, session) {
         updateDataset()
         df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
         sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
+        sites["name"] <- sites$DESTINATION
         
-        g <- ggplot(data = world) +
-          # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
-          #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
-          
-          geom_sf(fill = "antiquewhite1") +
-          geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
-          # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
-          # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
-          # fontface = "italic", color = "red", size = 2) +
-          coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
-          xlab("Longitude") + ylab("Latitude") +
-          ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+        g <- leaflet::leaflet(data = sites) %>% # create leaflet object
+          leaflet::addTiles() %>% # add basemap
+          leaflet::addMarkers() # add data layer - markers
+        
+        # g <- ggplot(data = world) +
+        #   # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
+        #   #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
+        #   
+        #   geom_sf(fill = "antiquewhite1") +
+        #   geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
+        #   # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
+        #   # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
+        #   # fontface = "italic", color = "red", size = 2) +
+        #   coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
+        #   xlab("Longitude") + ylab("Latitude") +
+        #   ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
         
         return (g)
       })
