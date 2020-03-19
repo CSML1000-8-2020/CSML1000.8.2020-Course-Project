@@ -16,8 +16,8 @@ library(htmltools)      # tools to support html workflow
 library(leaflet.extras) # extending the leaflet.js
 
 # Load files
-
-raw = fread('unzip -p ./input/acme-travel-vacation.zip')
+unzip("./input/acme-travel-vacation.zip", exdir = "input") # unzip file
+raw = fread("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
 raw <- raw %>% select(DESTINATION,PROPERTY_ID,PARTY_SIZE,MAIN_FLIGHT_DESTINATION,START_DATE,LENGTH_OF_STAY,BKG_DATE,REVENUE,MARGIN,ACCOMMODATION_STAR_RATING,HOTEL_CJAIN_AFFILIATION)
 
 cities.iata <- fread("./input/cities_IATA_long_lat.csv", header=TRUE)
@@ -50,19 +50,10 @@ ui <- dashboardPage(
                 fluidRow(
                   box(width=12,
                       leafletOutput('g')
-                      #   plotOutput('g')
-                      #   title = "Products:",
-                      #   selectInput('prod_col', NULL, products_for_dept$product_name, size = 10, selectize = FALSE),
-                      # ),
-                      # box(
-                      #   title = "Cart:",
-                      #   selectInput('cart_col', NULL, products_in_cart$product_name, size = 10, selectize = FALSE),
                   )
                 ),
                 fluidRow(
                   box(title = "Top Destinations for Bulk Purchase:", width=12,
-                      # Output: interactive world map
-                      # girafeOutput("distPlot")
                       tableOutput(outputId = "tlb"),
                       tags$style(type="text/css",
                                  ".shiny-output-error { visibility: hidden; }",
@@ -96,24 +87,11 @@ server <- function(input, output, session) {
     updateDataset()
     df <- merge(session$userData$ds_dataset, cities.iata, by.x="MAIN_FLIGHT_DESTINATION", by.y="IATA")
     sites <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = 4326,  agr = "constant")
-    #sites["name"] <- sites$DESTINATION
     
     g <- leaflet::leaflet(data = sites) %>% # create leaflet object
       leaflet::addTiles() %>% # add basemap
+      leaflet.extras::addResetMapButton() %>% 
       leaflet::addMarkers(popup = ~htmltools::htmlEscape(paste(DESTINATION,', Margin: ',MARGIN))) # add data layer - markers
-    
-    # g <- ggplot(data = world) +
-    #   # geom_polygon_interactive(data = world, color = 'gray70', size = 0.1,
-    #   #                           aes(x = "Longitude", y = "Latitude", fill = "Longitude", group = group )) +
-    #   
-    #   geom_sf(fill = "antiquewhite1") +
-    #   geom_sf(data = sites, size = 2, shape = 23, fill = "darkred") +
-    #   # annotate("point", x = -80, y = 35, colour = "green", size = 4) +
-    #   # annotate(geom = "text", x = -80, y = 36, label = "Florida" , 
-    #   # fontface = "italic", color = "red", size = 2) +
-    #   coord_sf(xlim = c(-100, -55), ylim = c(5, 25), expand = FALSE) +
-    #   xlab("Longitude") + ylab("Latitude") +
-    #   ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
     
     return (g)
   })
@@ -127,12 +105,6 @@ server <- function(input, output, session) {
       session$userData$ds_dataset
     })
   }
-  # Create the interactive world map
-  # output$distPlot <- renderGirafe({
-  #   ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
-  # ggiraph(code = print(worldMaps(df, world_data, input$data_type, input$period, input$indicator)))
-  # })
-  
 }
 
 # Run Shiny App
