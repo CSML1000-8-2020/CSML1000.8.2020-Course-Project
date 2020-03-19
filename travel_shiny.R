@@ -1,16 +1,8 @@
 # Load Libraries
 library(dplyr)
 library(data.table)
-library(shinydashboard)
 library(shiny)
-library(maps)
-library(ggplot2)
-library(ggiraph)
-library(RColorBrewer)
-library(rgeos)
-library(sf)
-library(rnaturalearth)
-library(rnaturalearthdata)
+library(shinydashboard)
 library(leaflet)        # javascript mapping lib :)
 library(htmltools)      # tools to support html workflow
 library(leaflet.extras) # extending the leaflet.js
@@ -21,10 +13,7 @@ raw = fread("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
 raw <- raw %>% select(DESTINATION,PROPERTY_ID,PARTY_SIZE,MAIN_FLIGHT_DESTINATION,START_DATE,LENGTH_OF_STAY,BKG_DATE,REVENUE,MARGIN,ACCOMMODATION_STAR_RATING,HOTEL_CJAIN_AFFILIATION)
 
 cities.iata <- fread("./input/cities_IATA_long_lat.csv", header=TRUE)
-ds_cities.iata <- cities.iata %>% mutate_if(is.factor, as.character)  
-
 world <- ne_countries(scale = "medium", returnclass = "sf")
-class(world)
 
 # Define UI
 ui <- dashboardPage(
