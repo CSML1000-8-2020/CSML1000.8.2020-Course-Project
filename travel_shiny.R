@@ -5,7 +5,11 @@ library(shiny)
 library(shinydashboard)
 library(leaflet)        # javascript mapping lib :)
 library(htmltools)      # tools to support html workflow
-library(leaflet.extras) # extending the leaflet.js
+library(leaflet.extras) # extending the leaflet.jsye
+library(rnaturalearth)
+library("rnaturalearthdata")
+library(rgeos)
+library(sf)
 
 # Load files
 unzip("./input/acme-travel-vacation.zip", exdir = "input") # unzip file
@@ -14,6 +18,7 @@ raw <- raw %>% select(DESTINATION,PROPERTY_ID,PARTY_SIZE,MAIN_FLIGHT_DESTINATION
 
 cities.iata <- fread("./input/cities_IATA_long_lat.csv", header=TRUE)
 world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
 
 # Define UI
 ui <- dashboardPage(
