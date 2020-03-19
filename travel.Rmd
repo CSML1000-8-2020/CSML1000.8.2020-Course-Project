@@ -1,6 +1,6 @@
 ---
 title: "CSML1000 Winter 2020, Group 8, Course Project"
-author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nicola Stevanovic"
+author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nikola Stevanovic"
 date: "3/19/2020"
 # output: 
 #   html_document:
