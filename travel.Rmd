@@ -1,6 +1,6 @@
 ---
 title: "CSML1000 Winter 2020, Group 8, Course Project"
-author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nikola Stevanovic"
+author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nicola Stevanovic"
 date: "3/19/2020"
 # output: 
 #   html_document:
@@ -51,7 +51,7 @@ library('glue')
 ## 1. Business Understanding
 
 - Business Problem:
-  The business problem we are trying to solve is optimizing travel agent bookings so that they can accurately gauge when  consummers will fly to destination hotspots and make a profit while doing so. To do so we will build a model that will  take historical travel data and use that to let travel agents know how far in advance they should prebook hotel rooms in popular travel locations.
+  The business problem we are trying to solve fir the final project is to facioptimizing travel agent bookings so that they can accurately gauge when  the surge will occur for the consummers to fly towards sun destinations and make a profit while doing so. To do so we will build a model that will  take historical travel data and use that to let travel agents know how far in advance they should prebook hotel rooms in popular travel locations.
 
 - Project Plan: 
   - Load and get an understanding of the dataset, its target variable and its features.
@@ -63,23 +63,22 @@ library('glue')
   - Identify any ethical considerations that should be addressed at each stage of the process.
 
 - Business Success Criteria: 
-  Success criteria for this business case would be that travel agents can use the application to streamline their booking process and also use the data provided to increase profitability.
+  Success criteria for this business case would be that travel agents can use the application to streamline their booking process and also use the data provided to increase profitability by booking aggressively at hotels before surge takes place.
 
 - Ethical Framework Questions: 
   - How could your system negatively impact individuals?
-    As this system is based on historical data, some years might have had outside factors that skew the data and while we tried to remove outliers there is still a chance that a booking date will be shown that is not the best possible date for a possible destination.
+    This is very important question to ask as we have to look at how our recommendations are not creating biases or undesired negative results for the customers.As this system is based on historical data, some years might have had outside factors that skew the data and while an effort has been made to remove outliers there is still a chance that a booking date will be shown that is not the best predicted date for a possible destination.
   
   - Who is most vulnerable and why? 
-    The most vulnerable people are the travel agents who would use the application, if they try to prebook rooms expecting a lot of sales in the coming months they might not reach the expected amount of sales and will either lose money or not profit as much as possible.
+    The most vulnerable people are the travel agents who would use the application, a common use case shall be that the booking agents try to prebook rooms expecting a lot of sales to take place in the coming months, in case the model has not predicted an extreme event to take place such as pandemic or a weather related event then they might not reach the expected amount of sales and will either lose money or not profit as much as possible.
   
   - How much error in predictions can your business accept for this use case? 
   As this could potentially affect the business profit and bottom line, we need to try and keep error to a minimum.
   
   - Will you need to explain which input factors had the greatest influence on outputs? 
-  Yes, the important input factors will need to be explained
+  Yes, the important input factors will need to be explained as the model is time to event and we need to imagine where the data is coming from and data.
   
-  - Do you need PII or can you provide group-level data? 
-    There is no need for PII. 
+  - Do you need PII or can you provide group-level data? The analysis requires customers travel booking and booking costs data however any PII can be anonymised.
 
 ## 2. Data Understanding
 
@@ -93,11 +92,11 @@ library('glue')
   - Are seemingly harmless features like location hiding proxies for socially sensitive features? 
   No, there are no socially sensitive features
 
-#### Get Data File
+#### 2.1 Get Data File
 
-- The Dataset used is obtained from: Air Canada Hackathon Data
+- For this final project we wanted to look at a real use case which presented real issues with data with skewness, data imbalance and ambiguity we came across the vaccations Dataset used is obtained from: Air Canada Hackathon Data
 
-#### Load and check data
+#### 2.2 Load and check data
 
 ```{r, message = FALSE}
 # Load data
@@ -107,7 +106,12 @@ raw = read.table("./input/acme-travel-vacation.csv", sep="\t", header=TRUE)
 # check data
 str(raw)
 ```
+#### 2.3 Initial Data Collection Report:
 
+  - There is files provided as part of the dataset for this semi supervised learning model:
+  
+    
+    Lets exploreand deep dive within the various datasets provided.
 ```{r, message = FALSE}
 summary(raw)
 ```
@@ -293,55 +297,6 @@ plot1 <- plot_num(dataset)
 describe1 <- describe(dataset)
 ```
 
-```{r, message = FALSE}
-# EDA - 2015
-glimpse_2015 <- glimpse(CANCUN_2015)
-df_status_2015 <- df_status(CANCUN_2015)
-freq_2015 <- freq(CANCUN_2015)
-profiling_num_2015 <- profiling_num(CANCUN_2015)
-plot_2015 <- plot_num(CANCUN_2015)
-describe_2015 <- describe(CANCUN_2015)
-```
-
-```{r, message = FALSE}
-# EDA - 2016
-glimpse_2016 <- glimpse(CANCUN_2016)
-df_status_2016 <- df_status(CANCUN_2016)
-freq_2016 <- freq(CANCUN_2016)
-profiling_num_2016 <- profiling_num(CANCUN_2016)
-plot_2016 <- plot_num(CANCUN_2016)
-describe_2016 <- describe(CANCUN_2016)
-```
-
-```{r, message = FALSE}
-# EDA - 2017
-glimpse_2017 <- glimpse(CANCUN_2017)
-df_status_2017 <- df_status(CANCUN_2017)
-freq_2017 <- freq(CANCUN_2017)
-profiling_num_2017 <- profiling_num(CANCUN_2017)
-plot_2017 <- plot_num(CANCUN_2017)
-describe_2017 <- describe(CANCUN_2017)
-```
-
-```{r, message = FALSE}
-# EDA - 2018
-glimpse_2018 <- glimpse(CANCUN_2018)
-df_status_2018 <- df_status(CANCUN_2018)
-freq_2018 <- freq(CANCUN_2018)
-profiling_num_2018 <- profiling_num(CANCUN_2018)
-plot_2018 <- plot_num(CANCUN_2018)
-describe_2018 <- describe(CANCUN_2018)
-```
-
-```{r, message = FALSE}
-# EDA - 2019
-glimpse_2019 <- glimpse(CANCUN_2019)
-df_status_2019 <- df_status(CANCUN_2019)
-freq_2019 <- freq(CANCUN_2019)
-profiling_num_2019 <- profiling_num(CANCUN_2019)
-plot_2019 <- plot_num(CANCUN_2019)
-describe_2019 <- describe(CANCUN_2019)
-```
 
 ```{r, message = FALSE}
 # Plotting interesting features
@@ -402,21 +357,6 @@ str(raw)
 ```
 
 ```{r, message = FALSE}
-basic_eda <- function(data)
-{
-  df_status(data)
-  freq(data) 
-  profiling_num(data)
-  plot_num(data)
-  describe(data)
-}
-```
-
-```{r, message = FALSE}
-basic_eda(raw)
-```
-
-```{r, message = FALSE}
 plot_str(raw)
 ```
 
@@ -446,26 +386,6 @@ plot_correlation(na.omit(raw), maxcat = 10L)
 
 ```{r, message = FALSE}
 plot_boxplot(raw, by = "START_DATE")
-```
-
-```{r, message = FALSE}
-
-```
-
-```{r, message = FALSE}
-
-```
-
-```{r, message = FALSE}
-
-```
-
-```{r, message = FALSE}
-
-```
-
-```{r, message = FALSE}
-
 ```
 
 ```{r, message = FALSE}
