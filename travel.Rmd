@@ -50,36 +50,52 @@ library('glue')
 
 ## 1. Business Understanding
 
-- Business Problem: 
+- Business Problem:
+  The business problem we are trying to solve is optimizing travel agent bookings so that they can accurately gauge when  consummers will fly to destination hotspots and make a profit while doing so. To do so we will build a model that will  take historical travel data and use that to let travel agents know how far in advance they should prebook hotel rooms in popular travel locations.
 
 - Project Plan: 
   - Load and get an understanding of the dataset, its target variable and its features.
   - Make any modifications to the dataset needed to enable learning algorithms to be run on the data.
   - Identify the features of the dataset that are important in predicting the target variable (dianosis in this case).
-  - Build and evaluate 3 to 4 Models from the dataset by appling various machine learning algoritms as appropiate and testing them.
+  - Build and evaluate a few models from the dataset by appling various machine learning algoritms as appropiate and    testing them.
   - Identify the best model to use for the project.
-  - Build a shiny app that deploys the selected model with a user interface for end users to imput measurement values from a study and obtain a pridiction result.
+  - Build a shiny app that deploys the selected model with a user interface for end users to imput measurement values from  a study and obtain a pridiction result.
   - Identify any ethical considerations that should be addressed at each stage of the process.
 
 - Business Success Criteria: 
+  Success criteria for this business case would be that travel agents can use the application to streamline their booking process and also use the data provided to increase profitability.
 
 - Ethical Framework Questions: 
-  - How could your system negatively impact individuals? 
+  - How could your system negatively impact individuals?
+    As this system is based on historical data, some years might have had outside factors that skew the data and while we tried to remove outliers there is still a chance that a booking date will be shown that is not the best possible date for a possible destination.
+  
   - Who is most vulnerable and why? 
+    The most vulnerable people are the travel agents who would use the application, if they try to prebook rooms expecting a lot of sales in the coming months they might not reach the expected amount of sales and will either lose money or not profit as much as possible.
+  
   - How much error in predictions can your business accept for this use case? 
+  As this could potentially affect the business profit and bottom line, we need to try and keep error to a minimum.
+  
   - Will you need to explain which input factors had the greatest influence on outputs? 
+  Yes, the important input factors will need to be explained
+  
   - Do you need PII or can you provide group-level data? 
+    There is no need for PII. 
 
 ## 2. Data Understanding
 
 - Ethical Framework Questions: 
   - Have you de-identified your data and taken measures to reduce the probability of reidentification? 
+    Yes the data is de-identified
+      
   - Will socially sensitive features like gender or ethnic background influence outputs? 
+  No, socially sensitive features will not influence outputs
+    
   - Are seemingly harmless features like location hiding proxies for socially sensitive features? 
+  No, there are no socially sensitive features
 
 #### Get Data File
 
-- The Dataset used is obtained from: 
+- The Dataset used is obtained from: Air Canada Hackathon Data
 
 #### Load and check data
 
@@ -460,6 +476,7 @@ plot_boxplot(raw, by = "START_DATE")
 ## 3. Data Preparation
 
 #### a) Data Modification
+  We modified the data quite heavily. Firstly we removed a bunch of columns that were completely NULL and then focused on identifying the data columns that would be useful for our business case. As we were doing our business case based on hotel booking we did not not need most of the data concerning the flight information or flight codes.
 
 #### Column Removals
 
@@ -553,8 +570,13 @@ We tried multiple methods to decide which variables to use for feature importanc
 
 - Ethical Framework Questions: 
   - Does your use case require a more interpretable algorithm? 
-  - Should you be optimizing for a different outcome than accuracy to make your outcomes fairer? 
+    No, the algorithm that we are using is interpretable for the audience that we are targeting. 
+    
+  - Should you be optimizing for a different outcome than accuracy to make your outcomes fairer?
+    No, as this is something that affects potential profit for companies accuracy is very important.
+    
   - Is it possible that a malicious actor has compromised training data and created misleading results? 
+    We thoroughly went through the data and made sure that any outliers or suspicious entries were dealt with accordingly.
 
 ## 4. A) Data Modeling - Random Forest
 
