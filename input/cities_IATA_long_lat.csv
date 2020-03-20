@@ -1,0 +1,38 @@
+IATA,City.x,Country.x,City_Code,Country_code,Airport_ID,Name,City.y,Country.y,ICAO,Latitude,Longitude,Timezone
+ANU,Antigua,Antigua and Barbuda,AG,AG,2874,V.C. Bird International Airport,Antigua,Antigua and Barbuda,TAPA,17.1367,-61.792702,-4
+AZS,Samana,Dominican Republic,DO,DO,5810,Samaná El Catey International Airport,Samana,Dominican Republic,MDCY,19.2670002,-69.74199677,-4
+BGI,Bridgetown,Barbados,BB,BB,2875,Sir Grantley Adams International Airport,Bridgetown,Barbados,TBPB,13.07460022,-59.49250031,-4
+CCC,Cayo Coco,Cuba,CU,CU,1901,Jardines Del Rey Airport,Cunagua,Cuba,MUCC,22.46100044,-78.32839966,-5
+CTG,Cartagena,Colombia,CO,CO,2714,Rafael Nuñez International Airport,Cartagena,Colombia,SKCG,10.4424,-75.513,-5
+CUN,Cancun,Mexico,MX,MX,1852,Cancún International Airport,Cancun,Mexico,MMUN,21.03650093,-86.87709808,-5
+CUR,Curacao,Curacao,AN,CW,2897,Hato International Airport,Willemstad,Netherlands Antilles,TNCC,12.1889,-68.959801,-4
+CZM,Cozumel,Mexico,MX,MX,1800,Cozumel International Airport,Cozumel,Mexico,MMCZ,20.5223999,-86.92559814,-5
+GGT,George Town,Bahamas,BS,BS,1941,Exuma International Airport,Great Exuma,Bahamas,MYEF,23.56259918,-75.87799835,-5
+GND,Port Saline,Grenada,DM,GD,2882,Point Salines International Airport,Point Salines,Grenada,TGPY,12.00419998,-61.78620148,-4
+HAV,Havana,Cuba,CU,CU,1909,José Martí International Airport,Havana,Cuba,MUHA,22.98920059,-82.40910339,-5
+HNL,Honolulu,Hawai,HI,US,3728,Daniel K Inouye International Airport,Honolulu,United States,PHNL,21.32062,-157.924228,-10
+HOG,Holguin,Cuba,CU,CU,1910,Frank Pais International Airport,Holguin,Cuba,MUHG,20.78560066,-76.31510162,-5
+HUX,Bahia De Huatulco,Mexico,MX,MX,1786,Bahías de Huatulco International Airport,Huatulco,Mexico,MMBT,15.7753,-96.262604,-6
+LIR,Liberia,Costa Rica,CR,LR,1881,Daniel Oduber Quiros International Airport,Liberia,Costa Rica,MRLB,10.5933,-85.544403,-6
+LRM,Casa De Campo,Dominican Republic,DO,DO,1759,Casa De Campo International Airport,La Romana,Dominican Republic,MDLR,18.45070076,-68.91179657,-4
+MBJ,Montego Bay,Jamaica,JM,JM,1780,Sangster International Airport,Montego Bay,Jamaica,MKJS,18.50370026,-77.91339874,-5
+POP,Puerto Plata,Dominican Republic,DO,DO,1761,Gregorio Luperon International Airport,Puerto Plata,Dominican Republic,MDPP,19.75790024,-70.56999969,-4
+PTP,Pointe A Pitre,Guadeloupe,GP,GP,2881,Pointe-à-Pitre Le Raizet,Pointe-a-pitre,Guadeloupe,TFFR,16.265301,-61.531799,-4
+PUJ,Punta Cana,Dominican Republic,DO,DO,1760,Punta Cana International Airport,Punta Cana,Dominican Republic,MDPC,18.56739998,-68.36340332,-4
+PVR,Puerto Vallarta,Mexico,MX,MX,1836,Licenciado Gustavo Díaz Ordaz International Airport,Puerto Vallarta,Mexico,MMPR,20.68009949,-105.2539978,-6
+SJD,Los Cabos,Mexico,MX,MX,1840,Los Cabos International Airport,San Jose Del Cabo,Mexico,MMSD,23.15180016,-109.7210007,-7
+SKB,Basseterre,Saint Kitts and Nevis,KN,KN,2891,Robert L. Bradshaw International Airport,Basse Terre,Saint Kitts and Nevis,TKPK,17.31119919,-62.71870041,-4
+SNU,Santa Clara,Santa Clara,CU,CU,1918,Abel Santamaria Airport,Santa Clara,Cuba,MUSC,22.49220085,-79.94360352,-5
+UVF,St Lucia,St Lucia,DM,LC,2894,Hewanorra International Airport,Hewandorra,Saint Lucia,TLPL,13.7332,-60.952599,-4
+VRA,Varadero,Cuba,CU,CU,1923,Juan Gualberto Gomez International Airport,Varadero,Cuba,MUVR,23.03440094,-81.43530273,-5
+YAM,Sault Ste Marie,Canada,ON,CA,21,Sault Ste Marie Airport,Sault Sainte Marie,Canada,CYAM,46.48500061,-84.50939941,-5
+YEG,Edmonton,Canada,AB,CA,49,Edmonton International Airport,Edmonton,Canada,CYEG,53.30970001,-113.5800018,-7
+YOW,Ottawa,Canada,ON,CA,100,Ottawa Macdonald-Cartier International Airport,Ottawa,Canada,CYOW,45.32249832,-75.66919708,-5
+YQB,Quebec,Canada,PQ,CA,111,Quebec Jean Lesage International Airport,Quebec,Canada,CYQB,46.7911,-71.393303,-5
+YUL,Montreal,Canada,PQ,CA,146,Montreal / Pierre Elliott Trudeau International Airport,Montreal,Canada,CYUL,45.47060013,-73.74079895,-5
+YWG,Winnipeg,Canada,MB,CA,160,Winnipeg / James Armstrong Richardson International Airport,Winnipeg,Canada,CYWG,49.90999985,-97.23989868,-6
+YXU,London,Canada,ON,CA,174,London Airport,London,Canada,CYXU,43.035599,-81.1539,-5
+YYF,Penticton,Canada,BC,CA,181,Penticton Airport,Penticton,Canada,CYYF,49.46310043,-119.6019974,-8
+YYT,St John,Canada,NF,CA,189,St. John's International Airport,St. John's,Canada,CYYT,47.61859894,-52.75189972,-3.5
+YYZ,Toronto,Canada,ON,CA,193,Lester B. Pearson International Airport,Toronto,Canada,CYYZ,43.67720032,-79.63059998,-5
+ZIH,Zihuatanejo,Mexico,MX,MX,1856,Ixtapa Zihuatanejo International Airport,Zihuatanejo,Mexico,MMZH,17.60160065,-101.4609985,-6
