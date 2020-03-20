@@ -1,6 +1,6 @@
 ---
 title: "CSML1000 Winter 2020, Group 8, Course Project"
-author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nicola Stevanovic"
+author: "Steven Wang, Tarun Bagga, Paul Doucet, Jerry Khidaroo, Nikola Stevanovic"
 date: "3/19/2020"
 # output: 
 #   html_document:
@@ -115,18 +115,27 @@ str(raw)
       
 ## Let us explore and deep dive within the various datasets provided.
     
-    For this section there are 2 CSV files provided, namely  acme-travel-vacation and cities_IATA_long_lat. The data inside the files specifies which . That is, order_products_prior contains previous order products for all customers and order_products_train contains the latest order products for some customers only.
-    
-Let us look the counts of records inside the files. Using the built-in R functions we can see that there are 652446    travel records by operators in the  order_products_prior file.
-Both the CSV files contain 4 features:
-    The ID of the order (order_id)
-    The ID of the product (product_id)
-    The ordering of that product in the order (add_to_cart_order)
-    Whether that product was reordered (reordered).
-    Overall, there are 3,346,083 unique orders for 49,685 unique products.There are 42 variables in this dataset
-```{r, message = FALSE}
-summary(raw)
-```
+    For this section there are 2 CSV files provided, namely acme-travel-vacation and cities_IATA_long_lat. The data inside the files specifies which is the booking and travel informatiion over the period of 5 years.
+Let us look the counts of records inside the files. Using the built-in R functions we can see that there are 652446    travel records by operators in the  acme-travel-vacation file.
+The travel csv file contains 16 features:
+    The Destination of the trip (DESTINATION)
+    The property id destination (PROPERTY_ID)
+    The party size of the customers (PARTY_SIZE)
+    The flight destination 3 letter code (MAIN_FLIGHT_DESTINATION)
+    The start date of the trip (START_DATE)
+    The length of the trip (LENGHT_OF_STAY)
+    The date that the trip was booked(BKG_DATE)
+    The revenue made from the trip (REVENUE)
+    The total cost of the trip(TOTAL_COST)
+    The profit margin for the agent(MARGIN)
+    The star rating for the accomodation(ACCOMMODATION_STAR_RATING)
+    The chain that the hotel is affiliated with(HOTEL_CHAIN_AFFILIATION)
+    The time to event(TTE)
+    The price per night for the trip(Price_PerNight)
+    The booking date as a weekday(Wday_BookingDate)
+    The start date as a weekday(Wday_StartDate)
+    Overall, there are 652446 rows in our data, there are also 16 variables in our datasett
+
 ## The summary statistcs of the raw dataset is shown above.
 ```{r, message = FALSE}
 head(raw, 12)
@@ -138,10 +147,45 @@ barplot(a,main="Booking Count per Destination",
         ylab="Count",
         xlab="Destination",
         col=rainbow(5),
-        #legend=rownames(a)
         )
 ```
+## Feature Engineering
 
+## 3. Data Preparation
+
+#### a) Data Modification
+  We modified the data quite heavily. Firstly we removed a bunch of columns that were completely NULL and then focused on identifying the data columns that would be useful for our business case. As we were doing our business case based on hotel booking we did not not need most of the data concerning the flight information or flight codes.
+
+#### Column Removals
+Based on the business problem of trying to find optimal booking window for the agent we had removed most of teh columns visually as they were not providing sufficent analysis to the model we were trying to create. This can be seen on the previous sections where removed the features.
+
+```{r, message = FALSE}
+# Remove Lines for the ID and Null X final Columns
+# travel_data_full <- travel_data_full[2:32]
+```
+
+#### Scale Data Set 
+We did not sclae the dataset as our model did not require scaling of data. We decided to remove the outliers and that seemed sufficent enough to get a good enough survivi=al analysis model. Hence Scaling was not included in this report.
+```{r, message = FALSE}
+
+```
+
+#### Split Data into Train and Test Sets
+
+Since we are using a semi supervised learning model, we are not able to use any kind of test and train split on the original datset and all the data shall be used for modelling purposes.
+
+```{r, message = FALSE}
+# prop.table(table(travel_data_train$diagnosis))*100
+# prop.table(table(travel_data_test$diagnosis))*100
+```
+
+For feature enginnering we would be removing null features and
+## Removing Null Values
+We did a summary on the main datset and traced all the features which had null values and removed it from the original dataset.
+```{r, message = FALSE}
+summary(raw)
+```
+ This section shall remove the null columns that are not useful for the analysis.
 ```{r, message = FALSE}
 dataset <- raw
 
@@ -181,7 +225,8 @@ dataset$ANCILLARY_REVENUE <- NULL
 #dataset$TOTAL_COST <- NULL
 dataset$SOURCE <- NULL
 ```
-
+## Data Transformation
+We are performing transformation on all the date column by converting all 8 digit integer to  y/m/d format. This is important step as it allows our model to deciopher dates properly in correct format.
 ```{r, message = FALSE}
 # Make certain adjustments to the data in the following columns
 dataset$START_DATE <- as.Date(as.character(dataset$START_DATE), format="%Y%m%d")
@@ -204,14 +249,15 @@ dataset$Wday_BookingDate <- as.factor(dataset$Wday_BookingDate)
 dataset$Wday_StartDate <- weekdays(as.Date(dataset$START_DATE))
 dataset$Wday_StartDate <- as.factor(dataset$Wday_StartDate)
 ```
-
+Looking at the first few values of each column along with last few records
 ```{r, message = FALSE}
 head(dataset,25)
 names(dataset)
 str(dataset)
 tail(dataset)
 ```
-
+## Data Split
+The data is split into yearly format to visualize the data year on year. This allows us to see what is variance in the data for each year and guides us to create a better Survival analysis model.
 ```{r, message = FALSE}
 #########################################################################################
 #########################################################################################
@@ -256,9 +302,10 @@ All_2015 <- dataset[dataset$START_DATE < as.Date("2016-01-01") &
                          # dataset$LENGTH_OF_STAY <= 14 &
                          # dataset$MARGIN > 0
                        ,]
+```
+We have created our model above and ran it on all the training data by saving into seperate excel format.
 
-
-# Save the New Dataset
+```{r, message = FALSE}
 dataset_flt <- dataset
 write.csv(dataset_flt,'dataset_flt.csv')
 write.csv(All_2019,'Vacation_2019.csv')
@@ -267,9 +314,8 @@ write.csv(All_2017,'Vacation_2017.csv')
 write.csv(All_2016,'Vacation_2016.csv')
 write.csv(All_2015,'Vacation_2015.csv')
 ```
-
+Graph Histogram of Popular Destinations per Booking
 ```{r, message = FALSE}
-# Graph Histogram of Popular Destinations per Booking
 tmp <- dataset %>%
   group_by(DESTINATION) %>%
   summarise(n=n()) %>%
@@ -281,20 +327,8 @@ tmp %>%
   geom_bar(stat="identity",fill="indian red")+
   coord_flip()
 ```
-
+## Graph Histogram of Popular Start Date of Bookings
 ```{r, message = FALSE}
-# EDA - Complete Dataset
-#glimpse1 <- glimpse(dataset)
-#df_status1 <- df_status(dataset)
-#freq1 <- freq(dataset)
-#profiling_num1 <- profiling_num(dataset)
-#plot1 <- plot_num(dataset)
-#describe1 <- describe(dataset)
-```
-
-
-```{r, message = FALSE}
-# Graph Histogram of Popular Start Date of Bookings
 tmp <- All_2019 %>%
   group_by(START_DATE) %>%
   summarise(n=n()) %>%
@@ -306,10 +340,9 @@ tmp %>%
   geom_bar(stat="identity",fill="indian red")+
   coord_flip()
 ```
-
-
+## Graph Histogram of Popular Destinations per Booking
 ```{r, message = FALSE}
-# Graph Histogram of Popular Destinations per Booking
+
 tmp <- All_2019 %>%
   group_by(HOTEL_CJAIN_AFFILIATION) %>%
   summarise(n=n()) %>%
@@ -322,8 +355,28 @@ tmp %>%
   coord_flip()
 
 ```
+## 4. Data Modeling
 
+- Ethical Framework Questions: 
+  - Does your use case require a more interpretable algorithm? 
+    No, the algorithm that we are using is interpretable for the audience that we are targeting. 
+    
+  - Should you be optimizing for a different outcome than accuracy to make your outcomes fairer?
+    No, as this is something that affects potential profit for companies accuracy is very important.
+    
+  - Is it possible that a malicious actor has compromised training data and created misleading results? 
+    We thoroughly went through the data and made sure that any outliers or suspicious entries were dealt with accordingly.
 
+## 4. A) Data Modeling Survival Analysis
+
+#### Build a Time to Event Model based on all values to start.
+#### This gives us a model that is reponsible to giving us optimal time to book a hotel
+
+### Kaplan-Meier Model
+
+According to IBM The Kaplan-Meier procedure is a method of estimating time-to-event models in the presence of censored cases. The Kaplan-Meier model is based on estimating conditional probabilities at each time point when an event occurs and taking the product limit of those probabilities to estimate the survival rate at each point in time.
+
+We perfomed Kaplan-Meier Survival Analysis to identofy the period where the agent shall
 ```{r, message = FALSE}
 km_2017 <- survfit(Surv(All_2017$TTE)~1)
 summary(km_2017)
@@ -345,7 +398,9 @@ plot(km_2019,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the P
 ```
 
 
+## Box Cox Model
 
+A Box Cox transformation is a way to transform non-normal dependent variables into a normal shape. Normality is an important assumption for many statistical techniques; if your data isn’t normal, applying a Box-Cox means that you are able to run a broader number of tests.
 ```{r, message = FALSE}
  km_curv <- survfit(Surv(Destination_num$TTE)~1)
  km_res <- summary(km_curv)
@@ -374,14 +429,6 @@ plot(km_2019,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the P
 
 ```
 
-
-```{r, message = FALSE}
-raw %>% filter(LENGTH_OF_STAY >= 1 & LENGTH_OF_STAY < 14)
-# Profiling the data input
-head(raw)
-str(raw)
-```
-
 ```{r, message = FALSE}
 plot_str(raw)
 ```
@@ -389,141 +436,23 @@ plot_str(raw)
 ```{r, message = FALSE}
 plot_missing(raw)
 ```
-
-```{r, message = FALSE}
-plot_bar(raw)
-```
-
+This graph shows summary statistics for all the features we have in our dataset with regards to frequency of occurances.
 ```{r, message = FALSE}
 plot_histogram(raw)
 ```
-
+When Analyzing the dataset we see that few outliers show up 
 ```{r, message = FALSE}
 plot_qq(raw, sampled_rows = 1000L)
 ```
-
+Correlation graph to see any correlation between the data
 ```{r, message = FALSE}
 plot_correlation(na.omit(raw), maxcat = 10L)
 ```
-
+The boxplot gives ability to deciphers the outliers from the dataset
 ```{r, message = FALSE}
 plot_boxplot(raw, by = "START_DATE")
 ```
 
-```{r, message = FALSE}
-# M <- cor(travel_data_full)
-# corrplot(M, method="circle", type="full")
-```
-
-## 3. Data Preparation
-
-#### a) Data Modification
-  We modified the data quite heavily. Firstly we removed a bunch of columns that were completely NULL and then focused on identifying the data columns that would be useful for our business case. As we were doing our business case based on hotel booking we did not not need most of the data concerning the flight information or flight codes.
-
-#### Column Removals
-
-```{r, message = FALSE}
-# Remove Lines for the ID and Null X final Columns
-# travel_data_full <- travel_data_full[2:32]
-```
-
-#### Scale Data Set 
-
-```{r, message = FALSE}
-# Encoding the target feature as factor
-# travel_data_full$diagnosis = factor(travel_data_full$diagnosis,
-#                                        levels = c('B', 'M'),
-#                                        labels = c(0,1))
-
-# Scaling the dataset for models that require it
-# travel_data_scaled <- travel_data_full
-# travel_data_scaled[,2:31] <- scale(travel_data_scaled[,2:31])
-# str(travel_data_scaled)
-# names(travel_data_full)
-```
-
-#### Split Data into Train and Test Sets
-
-- Here we are splitting the datatsets in test and train datasets which alows for running the models.
-
-```{r, message = FALSE}
-# Split the data into a train set and a test set
-# travel_data_train <- travel_data_full[1:426,]
-# travel_data_test <- travel_data_full[427:569,]
-```
-
-#### The Dependent Variable
-
-- The dependant variable in our analysis:
-
-```{r, message = FALSE}
-# prop.table(table(travel_data_train$diagnosis))*100
-# prop.table(table(travel_data_test$diagnosis))*100
-```
-
-- 
-
-#### b) Feature Engineering
-
-#### View Correlation Matrix to explore highly correlated features
-
-```{r, message = FALSE}
-# M <- cor(diagnosis_data_train[,2:31])
-# 24) perimeter_worst, 19) concave.points_worst, 22) radius_worst, 9) concave.points_mean, 8) concavity_mean
-# M <- cor(diagnosis_data_full[24, 19, 22, 9, 8])
-# corrplot(M, method="circle", type="full")
-```
-
-#### Check Feature variables distribution vs Target
-
-```{r, message = FALSE}
-
-# featurePlot(x = diagnosis_data_train[, 2:31], 
-#             y = diagnosis_data_train$diagnosis, 
-#             plot = "density", 
-#             strip=strip.custom(par.strip.text=list(cex=.7)),
-#             scales = list(x = list(relation="free"), 
-#                           y = list(relation="free")), layout = c(6, 5), adjust = 1.5, pch = "|", auto.key=list(columns=2))
-```
-
-#### Try a recursive feature elimination check - Feature Selection Method 1
-
-We tried multiple methods to decide which variables to use for feature importance. First one is recursive feature elimination technique as below.
-
-```{r, message = FALSE}
-# set.seed(100)
-# options(warn=-1)
-# 
-# subsets <- c(1:5, 15, 20, 25, 31)
-# 
-# ctrl <- rfeControl(functions = rfFuncs,
-#                    method = "repeatedcv",
-#                    repeats = 5,
-#                    verbose = FALSE)
-# 
-# lmProfile <- rfe(x=diagnosis_data_train[, 2:31], y=diagnosis_data_train$diagnosis,
-#                  sizes = subsets,
-#                  rfeControl = ctrl)
-# 
-# lmProfile
-```
-
-## 4. Data Modeling
-
-- Ethical Framework Questions: 
-  - Does your use case require a more interpretable algorithm? 
-    No, the algorithm that we are using is interpretable for the audience that we are targeting. 
-    
-  - Should you be optimizing for a different outcome than accuracy to make your outcomes fairer?
-    No, as this is something that affects potential profit for companies accuracy is very important.
-    
-  - Is it possible that a malicious actor has compromised training data and created misleading results? 
-    We thoroughly went through the data and made sure that any outliers or suspicious entries were dealt with accordingly.
-
-## 4. A) Data Modeling Time to Event
-
-#### Build a Time to Event Model based on all values to start.
-#### This gives us a model that is reponsible to giving us optimal time to book a hotel
 
 ```{r, message = FALSE}
 ##########################################################################
@@ -572,7 +501,6 @@ TTE_v <- as.character(TTE_v)
 df_TTE <- data.frame("Destination" = dest_dest_v,"IATA" = dest_airport_v, "TTE" = TTE_v)
 write.csv(df_TTE,'TTE_5pct.csv')
 ```
-
 
 ```{r, message = FALSE}
 # Merge airport data for the dataset
@@ -643,7 +571,7 @@ d + geom_point() +
   geom_smooth(fill=NA, size=1.2)
 ```
 
-
+## Final Results
 ```{r, message = FALSE, fig.width=8}
 df <- raw[c("DESTINATION", "PROPERTY_ID", "START_DATE", "PARTY_SIZE", "LENGTH_OF_STAY", "BKG_DATE", "MARGIN")]
 #df["PRE_BKG_DAYS"] <- df["START_DATE"] - df["BKG_DATE"]
@@ -675,97 +603,45 @@ summary(df_group)
 
 #### Cost Analysis
 
-
+We cost for getting incorrect model would be general mistrust on the application by the agents and loss of revenue for the hotel and the travel agents in genrat. There is no other cost that can be assicated with this model.As this could potentially affect the business profit and bottom line, we need to try and keep error to a minimum.
 ```{r, message = FALSE}
 
 ```
 
 #### Model Comparison
 
-<!-- - The following Machine Learning Algorithms were used in this analysis: -->
-<!--                         Accuracy Sesitivity Specificity  -->
-<!--   - Random Forest        0,9790    0.9722     1.0000 -->
-<!--   - Logistic Regression  0.9578    0.9434     0.9664 -->
-<!--   - Neural Net           0.9790    1.0000     0.9722 -->
-<!--   - kernel SVM           0.9790    0.9722     1.0000 -->
-
-
-<!-- Features of Random Forest:  -->
-<!-- Random Forest is a classification and regression algorithm. Here, we train several decision trees. The original learning dataset is randomly divided into several subsets of equal size. A decision tree is trained for each subset. -->
-
-<!-- Advantages: -->
-<!--   - Robust to overfitting (thus solving one of the biggest disadvantages of decision trees) -->
-<!--   - Parameterization remains quite simple and intuitive -->
-<!--   - Performs very well when the number of features is big and for large quantity of learning data -->
-
-<!-- Disadvantages: -->
-<!--   - Models generated with Random Forest may take a lot of memory -->
-<!--   - Learning may be slow (depending on the parameterization) -->
-<!--   - Not possible to iteratively improve the generated models -->
-
-<!-- Logistic Regression: -->
-<!-- Logistic Regression Model is a generalized form of Linear Regression Model. It is a very good Discrimination Tool. Following are the advantages and disadvantage of Logistic Regression: -->
-
-<!-- Advantages: -->
-<!--   - Logistic Regression performs well when the dataset is linearly separable. -->
-<!--   - Logistic regression is less prone to over-fitting but it can overfit in high dimensional datasets. You should consider Regularization (L1 and L2) techniques to avoid over-fitting in these scenarios. -->
-<!--   - Logistic Regression not only gives a measure of how relevant a predictor (coefficient size) is, but also its direction of association (positive or negative). -->
-<!--   - Logistic regression is easier to implement, interpret and very efficient to train. -->
-
-<!-- Disadvantages: -->
-<!--   - Main limitation of Logistic Regression is the assumption of linearity between the dependent variable and the independent variables. In the real world, the data is rarely linearly separable. Most of the time data would be a jumbled mess. -->
-<!--   - If the number of observations are lesser than the number of features, Logistic Regression should not be used, otherwise it may lead to overfit. -->
-<!--   - Logistic Regression can only be used to predict discrete functions. Therefore, the dependent variable of Logistic Regression is restricted to the discrete number set. This restriction itself is problematic, as it is prohibitive to the prediction of continuous data. -->
-
-<!-- Neural Network -->
-<!-- Advantages: -->
-<!--   - Complicated functions and non-linear problems can be solved easily by Neural network. -->
-<!--   - Can use ensembling with other techniques to get good solution. -->
-<!-- Disadvantage -->
-<!--   - Much Slower for training and classification -->
-<!--   - Hard to interpret, -->
-<!--   - Data comes in streams -->
-<!--   - Not usable with small datasets. -->
-
-<!-- Kernel SVM -->
-<!-- Features of SVMs: Support Vector machine is a classification algorithm used primarily with text classification problems. It uses  hyperplane to separate out different cluster of data. You can cut the universe in different classes using the hyperplane which can be molded in any direction. This can be done both linearly and non-linearly. The identified hyperplane can be thought as a decision boundary between the two clusters. This allows classification of vectors multi dimensionally. This can be used with text classification by encoding on text data. This results in every item in the dataset being represented as a vector with large value dimensions, everyone representing the frequency one of the words of the text. -->
-
-<!-- Advantages: -->
-<!--   - High accuracy with small data, -->
-<!--   - Not susceptible to overfitting -->
-<!--   - Works with linear and non-linear data. -->
-
-<!-- Disadvantage: -->
-<!--   - Memory-intensive operationally -->
-<!--   - Hard to understand and implement certain. -->
+We have used the following two models to do prediction for the instacart shopping use case.The following Machine Learning Algorithms were used in this analysis:
+  Kaplan-Meier - According to IBM The Kaplan-Meier procedure is a method of estimating time-to-event models in the presence of censored cases. The Kaplan-Meier model is based on estimating conditional probabilities at each time point when an event occurs and taking the product limit of those probabilities to estimate the survival rate at each point in time.
+  Box Cox - A Box Cox transformation is a way to transform non-normal dependent variables into a normal shape. Normality is an important assumption for many statistical techniques; if your data isn’t normal, applying a Box-Cox means that you are able to run a broader number of tests.
+  
+KM estimates the survival curve for one group only. KM doesnt provide any kind of comparison between groups. As we are only looking at prebooking dates for our model KM is a better fit for us compared to box cox that works with multiple groups.
 
 ```{r, message = FALSE}
 
 ```
 
 #### Selected Model: 
-
+We selected Kaplier-Maier model as it gives us much comfortable results that we can take it to the app and explain it to the end client.
 ## 7. Deployment
 
 #### Shiny App Url: 
-
+https://csml1000-group8.shinyapps.io/CSML1000-Group8-CourseProject/
 #### Summary Explanation
 
 - Limitations of our analysis: 
-  - 
+  - Due to processing and resource limitations we used a full datset but removed lot of features and split it into years.
+  - The analysis is based on data provided by Vaccation Company and may inherit any biases that exists in their customer base relative to the general population.
   
-- Further steps we could take: 
-  - 
-  
-- Explanation of Model:
-  - 
+- Further steps: 
+  - The analysis can be expanded to include all of the original data as well as any other similar sources that may be available. We also wanted to tackle the Ethical framework for the model by adding the percentages rules along with our time to event dates. The percentage would allow us to protect actors from creatiung huge nmistakes for themselves which would either be underiable, illegal or dangerous for the actors.
 
 - Ethical Framework Questions: 
-  - Can a malicious actor infer information about individuals from your system? 
-  - Are you able to identify anomalous activity on your system that might indicate a security breach? 
-  - Do you have a plan to monitor for poor performance on individuals or subgroups? 
-  - Do you have a plan to log and store historical predictions if a consumer requests access in the future? 
-  - Have you documented model retraining cycles and can you confirm that a subject’s data has been removed from models? 
+  - Can a malicious actor infer information about individuals from your system? No. There is no PII present.
+  - Are you able to identify anomalous activity on your system that might indicate a security breach? This would need to be considered for each specific deployment.
+  - Do you have a plan to monitor for poor performance on individuals or subgroups? N/A since No demographic data is present.
+  - Do you have a plan to log and store historical predictions if a consumer requests access in the future? N/A since No demographic data is present.
+  - Have you documented model retraining cycles and can you confirm that a subject’s data has been removed from models? N/A since No demographic data is present.
+
 
 ## References
 
