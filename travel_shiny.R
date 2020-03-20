@@ -105,6 +105,7 @@ server <- function(input, output, session) {
       session$userData$cities.iata$BookDate <- as.Date(as.Date(input$startDate) - session$userData$cities.iata$TTE, tryFormats = c("%Y-%m-%d"))
       #session$userData$cities.iata[c("IATA", "Country.x","Name", "BookDate")]
       df <- session$userData$cities.iata %>% select(IATA,Country.x,Name,BookDate)
+      df$BookDate <- format(df$BookDate, "%Y-%m-%d")
       df
     })
   }
