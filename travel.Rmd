@@ -142,27 +142,6 @@ barplot(a,main="Booking Count per Destination",
         )
 ```
 
-
-```{r, message = FALSE, fig.width=8, fig.align='left'}
-a=table(raw$PACKAGE_TYPE_INDICATOR)
-barplot(a,main="Booking Count per Package Type",
-        ylab="Count",
-        xlab="Package Type",
-        col=rainbow(5),
-        #legend=rownames(a)
-        )
-```
-
-```{r, message = FALSE, fig.width=8, fig.align='left'}
-a=table(raw$OUTBOUND_TRAVEL_CLASS)
-barplot(a,main="Booking Count per Travel Class",
-        ylab="Count",
-        xlab="Outbound Travel Class",
-        col=rainbow(5),
-        #legend=rownames(a)
-        )
-```
-
 ```{r, message = FALSE}
 dataset <- raw
 
@@ -305,12 +284,12 @@ tmp %>%
 
 ```{r, message = FALSE}
 # EDA - Complete Dataset
-glimpse1 <- glimpse(dataset)
-df_status1 <- df_status(dataset)
-freq1 <- freq(dataset)
-profiling_num1 <- profiling_num(dataset)
-plot1 <- plot_num(dataset)
-describe1 <- describe(dataset)
+#glimpse1 <- glimpse(dataset)
+#df_status1 <- df_status(dataset)
+#freq1 <- freq(dataset)
+#profiling_num1 <- profiling_num(dataset)
+#plot1 <- plot_num(dataset)
+#describe1 <- describe(dataset)
 ```
 
 
@@ -368,6 +347,35 @@ plot(km_2019,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the P
 
 
 ```{r, message = FALSE}
+ km_curv <- survfit(Surv(Destination_num$TTE)~1)
+ km_res <- summary(km_curv)
+ 
+ str(Destination_num)
+ 
+ cox <- coxph(Surv(Destination_num$TTE)~1 + Destination_num$DESTINATION + 
+                Destination_num$PROPERTY_ID + 
+                Destination_num$PARTY_SIZE +
+                Destination_num$MAIN_FLIGHT_DESTINATION +
+                Destination_num$START_DATE +
+                Destination_num$LENGTH_OF_STAY #+
+#                # Destination_num$BKG_DATE +
+#                # Destination_num$REVENUE +
+#                # Destination_num$TOTAL_COST +
+#                # Destination_num$MARGIN +
+#                # Destination_num$ACCOMMODATION_STAR_RATING +
+#                # Destination_num$HOTEL_CJAIN_AFFILIATION + 
+#                # Destination_num$Price_PerNight +
+#                # Destination_num$Cost_PerNight
+#                # 
+              )
+ cox_res <- summary(cox)
+
+ cox_res
+
+```
+
+
+```{r, message = FALSE}
 raw %>% filter(LENGTH_OF_STAY >= 1 & LENGTH_OF_STAY < 14)
 # Profiling the data input
 head(raw)
@@ -376,10 +384,6 @@ str(raw)
 
 ```{r, message = FALSE}
 plot_str(raw)
-```
-
-```{r, message = FALSE}
-plot_intro(raw)
 ```
 
 ```{r, message = FALSE}
@@ -637,6 +641,33 @@ d <- ggplot(data=All_2019, aes(x=START_DATE, y=TTE,
                                   colour=ACCOMMODATION_STAR_RATING)) 
 d + geom_point() + 
   geom_smooth(fill=NA, size=1.2)
+```
+
+
+```{r, message = FALSE, fig.width=8}
+df <- raw[c("DESTINATION", "PROPERTY_ID", "START_DATE", "PARTY_SIZE", "LENGTH_OF_STAY", "BKG_DATE", "MARGIN")]
+#df["PRE_BKG_DAYS"] <- df["START_DATE"] - df["BKG_DATE"]
+# df["START_YEAR"] <- substr(df$START_DATE, 1, 4) # - as.Date(df$BKG_DATE,"%Y%m%d")
+# df["START_MONTH"] <- substr(df$START_DATE, 5, 6)
+# df["START_DAY_OF_MTH"] <- substr(df$START_DATE, 7, 8)
+# df["START_MTH_AND_DAY"] <- substr(df$START_DATE, 5, 8)
+str(df)
+df_group <- aggregate(df[,4:7], df[,1:3], FUN = sum )
+# df_group <- aggregate(df[-c("PROPERTY_ID","START_DATE")], df[c("PROPERTY_ID","START_DATE")], FUN = sum )
+#df_group["MAX_OCCP"] <- df_group["PARTY_SIZE"]
+#aggregate(df$MAX_OCCP, by = list(df$PROPERTY_ID), max)
+#tapply(df_group$Value, df$PROPERTY_ID, max)
+# df_group %>%
+#   group_by(PROPERTY_ID) %>%
+#   summarise(MAX_OCCP = max(PARTY_SIZE))
+df_group["START_YEAR"] <- substr(df_group$START_DATE, 1, 4) # - as.Date(df$BKG_DATE,"%Y%m%d")
+df_group["START_MONTH"] <- substr(df_group$START_DATE, 5, 6)
+df_group["START_DAY_OF_MTH"] <- substr(df_group$START_DATE, 7, 8)
+df_group["START_MTH_AND_DAY"] <- substr(df_group$START_DATE, 5, 8)
+str(df_group)
+kable(head(df_group,20))
+kable(tail(df_group,20))
+summary(df_group)
 ```
 
 
