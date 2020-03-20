@@ -17,7 +17,7 @@ library(sf)
 # raw <- raw %>% select(DESTINATION,PROPERTY_ID,PARTY_SIZE,MAIN_FLIGHT_DESTINATION,START_DATE,LENGTH_OF_STAY,BKG_DATE,REVENUE,MARGIN,ACCOMMODATION_STAR_RATING,HOTEL_CJAIN_AFFILIATION)
 
 
-cities.iata <- fread("./input/cities_IATA_long_lat.csv", header=TRUE)
+cities.iata <- fread("./input/IATA_TTE_5pct.csv", header=TRUE)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 class(world)
 
