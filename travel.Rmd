@@ -42,6 +42,7 @@ library(ranger)
 library(ggplot2)
 library(dplyr)
 library(ggfortify)
+library(DataExplorer)
 ```
 
 ## 1. Business Understanding
@@ -379,14 +380,14 @@ According to IBM The Kaplan-Meier procedure is a method of estimating time-to-ev
 We perfomed Kaplan-Meier Survival Analysis to identofy the period where the agent shall
 ```{r, message = FALSE}
 km_2017 <- survfit(Surv(All_2017$TTE)~1)
-summary(km_2017)
+#summary(km_2017)
 plot(km_2017,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2017", xlab="Pre Booking in Days", ylab="Estimated probability")
 ```
 
 
 ```{r, message = FALSE}
 km_2018 <- survfit(Surv(All_2018$TTE)~1)
-summary(km_2018)
+#summary(km_2018)
 plot(km_2018,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the Pre Booking 2018", xlab="Pre Booking in Days", ylab="Estimated probability")
 ```
 
@@ -401,37 +402,6 @@ plot(km_2019,conf.int=FALSE, mark.time=TRUE,main="Kaplan-Meier estimate of the P
 ## Box Cox Model
 
 A Box Cox transformation is a way to transform non-normal dependent variables into a normal shape. Normality is an important assumption for many statistical techniques; if your data isn’t normal, applying a Box-Cox means that you are able to run a broader number of tests.
-```{r, message = FALSE}
- km_curv <- survfit(Surv(Destination_num$TTE)~1)
- km_res <- summary(km_curv)
- 
- str(Destination_num)
- 
- cox <- coxph(Surv(Destination_num$TTE)~1 + Destination_num$DESTINATION + 
-                Destination_num$PROPERTY_ID + 
-                Destination_num$PARTY_SIZE +
-                Destination_num$MAIN_FLIGHT_DESTINATION +
-                Destination_num$START_DATE +
-                Destination_num$LENGTH_OF_STAY #+
-#                # Destination_num$BKG_DATE +
-#                # Destination_num$REVENUE +
-#                # Destination_num$TOTAL_COST +
-#                # Destination_num$MARGIN +
-#                # Destination_num$ACCOMMODATION_STAR_RATING +
-#                # Destination_num$HOTEL_CJAIN_AFFILIATION + 
-#                # Destination_num$Price_PerNight +
-#                # Destination_num$Cost_PerNight
-#                # 
-              )
- cox_res <- summary(cox)
-
- cox_res
-
-```
-
-```{r, message = FALSE}
-plot_str(raw)
-```
 
 ```{r, message = FALSE}
 plot_missing(raw)
@@ -508,7 +478,7 @@ write.csv(df_TTE,'TTE_5pct.csv')
 raw_airport = read.csv("./input/cities_IATA_long_lat.csv", header=TRUE)
 df_IATA <- raw_airport
 # Airport Code and ETA
-TTE_aiport = read.csv("./input/TTE_5pct.csv", header=TRUE)
+TTE_aiport = read.csv("./input/IATA_TTE_5pct.csv", header=TRUE)
 df_IATA_TTE <- TTE_aiport
 # Merge two datasets
 mydata <- merge(df_IATA,df_IATA_TTE,by="IATA")
@@ -562,7 +532,7 @@ str(All_2018)
 
 str(All_2019)
 ggplot(data = All_2019) +
-  geom_point(mapping = aes(x= TTE, y = Cost_PerNight, colour = ACCOMMODATION_STAR_RATING))
+  geom_point(mapping = aes(x= TTE, y = Price_PerNight, colour = ACCOMMODATION_STAR_RATING))
 
 
 d <- ggplot(data=All_2019, aes(x=START_DATE, y=TTE,
@@ -571,7 +541,7 @@ d + geom_point() +
   geom_smooth(fill=NA, size=1.2)
 ```
 
-## Final Results
+## Final Data Preparation for Box Cox Model
 ```{r, message = FALSE, fig.width=8}
 df <- raw[c("DESTINATION", "PROPERTY_ID", "START_DATE", "PARTY_SIZE", "LENGTH_OF_STAY", "BKG_DATE", "MARGIN")]
 #df["PRE_BKG_DAYS"] <- df["START_DATE"] - df["BKG_DATE"]
@@ -596,6 +566,62 @@ str(df_group)
 kable(head(df_group,20))
 kable(tail(df_group,20))
 summary(df_group)
+```
+
+```{r, message = FALSE, fig.width=10, fig.height=8}
+ggplot(aes(x=START_MTH_AND_DAY,y=PARTY_SIZE),data=df_group)+
+  geom_point()
+```
+
+```{r, message = FALSE, fig.width=10, fig.height=8}
+df_group %>%
+  na.omit() %>%
+ggplot(aes(x = START_MONTH, y = PARTY_SIZE)) +
+      geom_point(color = "darkorchid4") +
+      facet_wrap( ~ DESTINATION ) +
+      labs(title = "Occupancy by Month for Destinations",
+           subtitle = "Use facets to plot by a variable - DESTINATION in this case",
+           y = "Daily Occupancy",
+           x = "Date") + theme_bw(base_size = 15) #+
+     # adjust the x axis breaks
+     #scale_x_date(date_breaks = "5 years", date_labels = "%m-%Y")
+```
+
+```{r, message = FALSE}
+# Make certain adjustments to the data in the following columns
+df_group$START_DATE <- as.Date(as.character(df_group$START_DATE), format="%Y%m%d")
+# BKG_DATE
+df_group$BKG_DATE <- as.Date(as.character(df_group$BKG_DATE), format="%Y%m%d")
+
+# TTE - Time between vacation start and booking date
+df_group$TTE <- df_group$START_DATE - df_group$BKG_DATE
+df_group$TTE <- as.numeric(df_group$TTE)
+
+# Day of week of booking
+df_group$Wday_BookingDate <- weekdays(as.Date(df_group$BKG_DATE))
+df_group$Wday_BookingDate <- as.factor(df_group$Wday_BookingDate)
+# Day of week of start of stay
+df_group$Wday_StartDate <- weekdays(as.Date(df_group$START_DATE))
+df_group$Wday_StartDate <- as.factor(df_group$Wday_StartDate)
+```
+
+```{r, message = FALSE}
+names(df_group)
+box_cox<- coxph(Surv(TTE) ~ 1 , data = df_group)
+summary(box_cox)
+curve_cox <- survfit(box_cox)
+N <- length(unique(lung$PROPERTY_ID))
+group <- lung$PROPERTY_ID
+plot(curve_cox,xlab="Time",ylab="Survival Probability", mark.time = F, col=1:N)
+# legend(
+#   "topright",
+#   legend=unique(group),
+#   col=1:N,
+#   horiz=FALSE,
+#   bty='n', lty=2:3)
+
+#plot(curve_cox)
+
 ```
 
 
